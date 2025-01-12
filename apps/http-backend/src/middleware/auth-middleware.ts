@@ -4,19 +4,27 @@ import jwt from "jsonwebtoken";
 import ErrorHandler from "../errors/error-handler";
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const token = req.headers["authorization"] || "";
-    if (!token) {
-      throw new ErrorHandler(401, "Unauthorized");
-    }
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded) {
-      // @ts-ignore
-      req.userId = decoded.userId;
-      next();
-    }
-  } catch (error) {
-    next(error);
+  // try {
+  const token = req.headers["authorization"] || "";
+  if (!token) {
+    throw new ErrorHandler(401, "Unauthorized");
   }
+  const decoded = jwt.verify(token, JWT_SECRET);
+  // @ts-ignore
+
+  console.log(decoded, "sdfsdf");
+  if (decoded as any) {
+    // @ts-ignore
+    req.userId = decoded.payload.id;
+    next();
+  } else {
+    res.status(403).json({
+      message: "You are not logged in",
+    });
+  }
+  // } catch (error) {
+  //   // throw new ErrorHandler(402, "Unauthorized");
+  //   next(error);
+  //   // console.log(error);
+  // }
 };

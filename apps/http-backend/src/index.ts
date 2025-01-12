@@ -1,9 +1,9 @@
 import express, { NextFunction, Request, Response } from "express";
 import authRouter from "./routes/auth-routes";
-import { JWT_SECRET } from "@repo/backend-common/config";
 import { CreateRoomSchema } from "@repo/common/schema";
 import { auth } from "./middleware/auth-middleware";
 import ErrorHandler from "./errors/error-handler";
+import { prisma } from "@repo/db/prisma";
 
 const app = express();
 
@@ -16,13 +16,24 @@ app.post(
   "/api/room",
   auth,
   (req: Request, res: Response, next: NextFunction) => {
+    console.log("first");
     const { data, success } = CreateRoomSchema.safeParse(req.body);
-    console.log(data, "data");
     if (!success) {
       throw new ErrorHandler(400, "Bad Request");
     }
     try {
+      const room = prisma.room.create({
+        data: {
+          slug: data.slug,
+          //@ts-ignore
+          adminId: Number(req?.userId),
+        },
+      });
+      if (!room) {
+        throw new ErrorHandler(500, "Internal server error");
+      }
       res.status(201).json({
+        room,
         message: "created successfull",
       });
     } catch (error) {
@@ -48,7 +59,6 @@ app.use(
   }
 );
 
-app.listen(6050, () => {
-  console.log(JWT_SECRET, "JWT_SECRET");
-  console.log("RUNNING HTTP SERVER ON PORT 6050");
+app.listen(6007, () => {
+  console.log("RUNNING HTTP SERVER ON PORT 6007");
 });

@@ -11,6 +11,7 @@
     "@repo/typescript-config": "*",
     "@repo/backend-common": "*",
     "@repo/common": "*",
+    "@repo/db": "*",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "tsc": "^2.0.4"
