@@ -42,6 +42,33 @@ app.post(
   }
 );
 
+app.post(
+  "/api/chats/:roomId",
+  auth,
+  (req: Request, res: Response, next: NextFunction) => {
+    const roomId = Number(req.params.roomId);
+    try {
+      const chats = prisma.chat.findMany({
+        where: {
+          id: roomId,
+        },
+        orderBy: {
+          id: "desc",
+        },
+        take: 50,
+      });
+      if (!chats) {
+        throw new ErrorHandler(500, "Internal server error");
+      }
+      res.status(201).json({
+        chats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   const error = new ErrorHandler(404, "route not found");
   res.status(error.status).json({
