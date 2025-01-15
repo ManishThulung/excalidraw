@@ -1,20 +1,20 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 
 const wss = new WebSocketServer({ port: 8009 });
 
-interface User {
+interface Room {
   ws: WebSocket;
-  rooms: string[];
   userId: string;
 }
 
-const users: User[] = [];
+let users: Record<string, Room[]> = {};
 
 wss.on("connection", function connection(ws, req) {
   const url = req.url;
   if (!url) {
+    ws.close();
     return;
   }
 
@@ -24,16 +24,22 @@ wss.on("connection", function connection(ws, req) {
   const decoded = jwt.verify(token, JWT_SECRET);
 
   // @ts-ignore
+  const userId = decoded.userId;
+
+  // @ts-ignore
   if (!decoded && !decoded.payload.id) {
     ws.close();
     return;
   }
 
-  users.push({
-    ws,
-    rooms: [],
-    userId: decoded.payload.id,
-  });
+  // users.push({
+  //   ws,
+  //   rooms: [],
+  //   // @ts-ignore
+  //   userId: decoded.payload.id,
+  // });
+
+  // users.
 
   ws.on("error", console.error);
 
@@ -41,31 +47,45 @@ wss.on("connection", function connection(ws, req) {
     const parsedData = JSON.parse(data as unknown as string);
 
     if (parsedData.type == "join_room") {
-      const user = users.filter((user) => user.ws === ws);
-      user?.rooms?.push(parsedData.roomId);
+      const { room } = parsedData;
+      if (!users[room]) {
+        users[room] = [];
+      }
+      users[room]?.push({ ws, userId });
     }
 
     if (parsedData.type == "leave_room") {
-      const user = users.filter((user) => user.ws === ws);
-      if (!user) {
+      const { room } = parsedData;
+
+      if (!users[room]) {
+        ws.close();
         return;
       }
-      user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
-    }
-    if (parsedData.type == "chat") {
-      const roomId = parsedData.roomId;
-      const message = parsedData.message;
 
-      users.forEach((user) => {
-        const part = user.rooms.includes(roomId);
-        part && user.ws.send(message);
+      const index = users[room]?.findIndex((user) => user.ws === ws);
+      if (index === -1) {
+        ws.close();
+        return;
+      }
+
+      users[room]?.splice(index, 1);
+    }
+
+    if (parsedData.type == "chat") {
+      const { room, message } = parsedData.roomId;
+      if (!users[room]) {
+        ws.close();
+        return;
+      }
+      users[room]?.forEach((user) => {
+        user && user.ws.send(message);
       });
 
-      const user = users.filter((user) => user.ws === ws);
-      if (!user) {
-        return;
-      }
-      user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
+      // const user = users.filter((user) => user.ws === ws);
+      // if (!user) {
+      //   return;
+      // }
+      // user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
     }
   });
 
