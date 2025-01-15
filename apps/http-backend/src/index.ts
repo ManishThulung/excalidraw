@@ -16,7 +16,6 @@ app.post(
   "/api/room",
   auth,
   (req: Request, res: Response, next: NextFunction) => {
-    console.log("first");
     const { data, success } = CreateRoomSchema.safeParse(req.body);
     if (!success) {
       throw new ErrorHandler(400, "Bad Request");
@@ -45,10 +44,10 @@ app.post(
 app.post(
   "/api/chats/:roomId",
   auth,
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const roomId = Number(req.params.roomId);
     try {
-      const chats = prisma.chat.findMany({
+      const chats = await prisma.chat.findMany({
         where: {
           id: roomId,
         },
@@ -56,6 +55,27 @@ app.post(
           id: "desc",
         },
         take: 50,
+      });
+      if (!chats) {
+        throw new ErrorHandler(500, "Internal server error");
+      }
+      res.status(201).json({
+        chats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+app.get(
+  "/api/room/:slug",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const slug = req.params.slug;
+    try {
+      const chats = await prisma.room.findFirst({
+        where: {
+          slug,
+        },
       });
       if (!chats) {
         throw new ErrorHandler(500, "Internal server error");
