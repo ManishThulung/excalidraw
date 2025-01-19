@@ -24,7 +24,7 @@ wss.on("connection", function connection(ws, req) {
   const decoded = jwt.verify(token, JWT_SECRET);
 
   // @ts-ignore
-  const userId = decoded.userId;
+  const userId = decoded.payload.id;
 
   // @ts-ignore
   if (!decoded && !decoded.payload.id) {
@@ -47,6 +47,7 @@ wss.on("connection", function connection(ws, req) {
     const parsedData = JSON.parse(data as unknown as string);
 
     if (parsedData.type == "join_room") {
+      console.log(`join room ${userId}`)
       const { room } = parsedData;
       if (!users[room]) {
         users[room] = [];
@@ -55,6 +56,7 @@ wss.on("connection", function connection(ws, req) {
     }
 
     if (parsedData.type == "leave_room") {
+      console.log(`leave room ${userId}`)
       const { room } = parsedData;
 
       if (!users[room]) {
@@ -65,14 +67,15 @@ wss.on("connection", function connection(ws, req) {
       const index = users[room]?.findIndex((user) => user.ws === ws);
       if (index === -1) {
         ws.close();
-        return;
+        return; 
       }
 
       users[room]?.splice(index, 1);
     }
 
     if (parsedData.type == "chat") {
-      const { room, message } = parsedData.roomId;
+      console.log(`chat sent by ${userId}`)
+      const { room, message } = parsedData;
       if (!users[room]) {
         ws.close();
         return;
@@ -89,5 +92,5 @@ wss.on("connection", function connection(ws, req) {
     }
   });
 
-  ws.send("something");
+  ws.send("socket connection successful");
 });
