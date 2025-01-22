@@ -24,7 +24,6 @@ app.post(
       const room = prisma.room.create({
         data: {
           slug: data.slug,
-          //@ts-ignore
           adminId: Number(req?.userId),
         },
       });

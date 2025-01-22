@@ -3,13 +3,13 @@
 import { initDraw } from "@/draw";
 import React, { useEffect, useRef, useState } from "react";
 
-type ShapeType = "rect" | "circle" | "arrow";
+export type Tools = "rect" | "circle" | "arrow";
 
 const Canvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawType, setDrawType] = useState<ShapeType | null>(null);
+  const [drawType, setDrawType] = useState<Tools | null>(null);
 
-  const handleClick = (type: ShapeType) => {
+  const handleClick = (type: Tools) => {
     setDrawType(type);
   };
 
@@ -20,19 +20,19 @@ const Canvas = ({ roomId }: { roomId: string }) => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      initDraw(canvas);
+      initDraw(canvas, drawType);
     }
-  }, []);
+  }, [drawType]);
   return (
-    <div className="relative">
+    <>
       <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />
-      <div className="absolute bg-blue-800 top-2 left-10 flex gap-4">
+      <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-4 px-6 py-2 rounded-md">
         <button onClick={() => handleClick("rect")}>rectangle</button>
         <button onClick={() => handleClick("circle")}>circle</button>
         <button onClick={() => handleClick("arrow")}>arraow</button>
         {/* <button>rectangle</button> */}
       </div>
-    </div>
+    </>
   );
 };
 
