@@ -1,11 +1,11 @@
 "use client";
 
 import { initDraw } from "@/draw";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type Tools = "rect" | "circle" | "arrow";
 
-const Canvas = ({ roomId }: { roomId: string }) => {
+const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawType, setDrawType] = useState<Tools | null>(null);
 
@@ -23,6 +23,7 @@ const Canvas = ({ roomId }: { roomId: string }) => {
       initDraw(canvas, drawType);
     }
   }, [drawType]);
+
   return (
     <>
       <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />

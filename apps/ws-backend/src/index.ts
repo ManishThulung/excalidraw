@@ -23,11 +23,11 @@ wss.on("connection", function connection(ws, req) {
 
   const decoded = jwt.verify(token, JWT_SECRET);
 
-  // @ts-ignore
-  const userId = decoded.payload.id;
+  // @ts-ignore 
+  const userId = decoded.paylod.id;
 
   // @ts-ignore
-  if (!decoded && !decoded.payload.id) {
+  if (!decoded && !decoded.paylod.id) {
     ws.close();
     return;
   }
