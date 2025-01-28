@@ -20,7 +20,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      initDraw(canvas, drawType);
+      initDraw(canvas, drawType, roomId, socket);
     }
   }, [drawType]);
 

@@ -15,7 +15,7 @@ app.use("/api", authRouter);
 app.post(
   "/api/room",
   auth,
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: any, res: Response, next: NextFunction) => {
     const { data, success } = CreateRoomSchema.safeParse(req.body);
     if (!success) {
       throw new ErrorHandler(400, "Bad Request");
@@ -24,7 +24,7 @@ app.post(
       const room = prisma.room.create({
         data: {
           slug: data.slug,
-          adminId: Number(req?.userId),
+          adminId: Number(req.userId),
         },
       });
       if (!room) {
@@ -105,6 +105,6 @@ app.use(
   }
 );
 
-app.listen(6007, () => {
-  console.log("RUNNING HTTP SERVER ON PORT 6007");
+app.listen(6000, () => {
+  console.log("RUNNING HTTP SERVER ON PORT 6000");
 });

@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 
-const wss = new WebSocketServer({ port: 8009 });
+const wss = new WebSocketServer({ port: 8080 });
 
 interface Room {
   ws: WebSocket;
@@ -23,7 +23,7 @@ wss.on("connection", function connection(ws, req) {
 
   const decoded = jwt.verify(token, JWT_SECRET);
 
-  // @ts-ignore 
+  // @ts-ignore
   const userId = decoded.paylod.id;
 
   // @ts-ignore
@@ -47,7 +47,7 @@ wss.on("connection", function connection(ws, req) {
     const parsedData = JSON.parse(data as unknown as string);
 
     if (parsedData.type == "join_room") {
-      console.log(`join room ${userId}`)
+      console.log(`join room ${userId}`);
       const { room } = parsedData;
       if (!users[room]) {
         users[room] = [];
@@ -56,7 +56,7 @@ wss.on("connection", function connection(ws, req) {
     }
 
     if (parsedData.type == "leave_room") {
-      console.log(`leave room ${userId}`)
+      console.log(`leave room ${userId}`);
       const { room } = parsedData;
 
       if (!users[room]) {
@@ -67,14 +67,14 @@ wss.on("connection", function connection(ws, req) {
       const index = users[room]?.findIndex((user) => user.ws === ws);
       if (index === -1) {
         ws.close();
-        return; 
+        return;
       }
 
       users[room]?.splice(index, 1);
     }
 
     if (parsedData.type == "chat") {
-      console.log(`chat sent by ${userId}`)
+      console.log(`chat sent by ${userId}`);
       const { room, message } = parsedData;
       if (!users[room]) {
         ws.close();

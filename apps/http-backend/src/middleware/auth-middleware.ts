@@ -10,12 +10,11 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     throw new ErrorHandler(401, "Unauthorized");
   }
   const decoded = jwt.verify(token, JWT_SECRET);
-  // @ts-ignore
 
   console.log(decoded, "sdfsdf");
   if (decoded as any) {
     // @ts-ignore
-    req.userId = decoded.payload.id;
+    req.userId = (decoded as any).payload.id;
     next();
   } else {
     res.status(403).json({

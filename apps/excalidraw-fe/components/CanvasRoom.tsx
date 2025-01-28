@@ -10,11 +10,7 @@ const CanvasRoom = ({ roomId }: { roomId: string }) => {
   if (loading || !socket) {
     return <div>Connecting to room</div>;
   }
-  return (
-    <>
-      <Canvas roomId={roomId} socket={socket} />
-    </>
-  );
+  return <Canvas roomId={roomId} socket={socket} />;
 };
 
 export default CanvasRoom;

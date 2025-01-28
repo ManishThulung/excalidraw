@@ -16,7 +16,7 @@ type Shape =
       height: number;
     };
 
-export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null) => {
+export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null, roomId: string, socket: WebSocket) => {
   const context = canvas.getContext("2d");
 
   if (!context || !tool) {
