@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
+import { prisma } from "@repo/db/prisma";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -24,10 +25,10 @@ wss.on("connection", function connection(ws, req) {
   const decoded = jwt.verify(token, JWT_SECRET);
 
   // @ts-ignore
-  const userId = decoded.paylod.id;
+  const userId = decoded.payload.id;
 
   // @ts-ignore
-  if (!decoded && !decoded.paylod.id) {
+  if (!decoded && !decoded.payload.id) {
     ws.close();
     return;
   }
@@ -43,7 +44,7 @@ wss.on("connection", function connection(ws, req) {
 
   ws.on("error", console.error);
 
-  ws.on("message", function message(data) {
+  ws.on("message", async function message(data) {
     const parsedData = JSON.parse(data as unknown as string);
 
     if (parsedData.type == "join_room") {
@@ -89,6 +90,36 @@ wss.on("connection", function connection(ws, req) {
       //   return;
       // }
       // user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
+    }
+
+    if (parsedData.type == "draw") {
+      console.log(`drawn by ${userId}`);
+      const { room, content, toolType } = parsedData;
+      if (!users[room]) {
+        ws.close();
+        return;
+      }
+
+      console.log(toolType, "toolType");
+
+      const contentData = JSON.stringify(content);
+      const payload = {
+        data: contentData,
+        type: toolType,
+      };
+
+      users[room]?.forEach((user) => {
+        user && user.ws.send(JSON.stringify(payload));
+      });
+
+      await prisma.shape.create({
+        data: {
+          type: toolType,
+          content: contentData,
+          roomId: Number(room),
+          userId,
+        },
+      });
     }
   });
 

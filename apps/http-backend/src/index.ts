@@ -4,11 +4,13 @@ import { CreateRoomSchema } from "@repo/common/schema";
 import { auth } from "./middleware/auth-middleware";
 import ErrorHandler from "./errors/error-handler";
 import { prisma } from "@repo/db/prisma";
+import cors from "cors";
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 app.use("/api", authRouter);
 
@@ -71,10 +73,17 @@ app.get(
     try {
       const shapes = await prisma.shape.findMany({
         where: {
-          id: roomId,
+          roomId,
         },
         orderBy: {
           id: "desc",
+        },
+        select: {
+          id: true,
+          type: true,
+          content: true,
+          roomId: true,
+          userId: true,
         },
       });
       if (!shapes) {
@@ -128,6 +137,6 @@ app.use(
   }
 );
 
-app.listen(6000, () => {
-  console.log("RUNNING HTTP SERVER ON PORT 6000");
+app.listen(4000, () => {
+  console.log("RUNNING HTTP SERVER ON PORT 4000");
 });

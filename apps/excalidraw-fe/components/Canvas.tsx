@@ -3,7 +3,7 @@
 import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 
-export type Tools = "rect" | "circle" | "arrow";
+export type Tools = "Rect" | "Circle" | "Arrow";
 
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,6 +20,8 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
+      // const data = getShapes();
+
       initDraw(canvas, drawType, roomId, socket);
     }
   }, [drawType]);
@@ -28,13 +30,13 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     <>
       <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />
       <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-4 px-6 py-2 rounded-md">
-        <button className="text-black" onClick={() => handleClick("rect")}>
+        <button className="text-black" onClick={() => handleClick("Rect")}>
           rectangle
         </button>
-        <button className="text-black" onClick={() => handleClick("circle")}>
+        <button className="text-black" onClick={() => handleClick("Circle")}>
           circle
         </button>
-        <button className="text-black" onClick={() => handleClick("arrow")}>
+        <button className="text-black" onClick={() => handleClick("Arrow")}>
           arraow
         </button>
         {/* <button>rectangle</button> */}

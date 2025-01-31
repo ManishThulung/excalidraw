@@ -1,4 +1,5 @@
 import { Tools } from "@/components/Canvas";
+import { getShapes } from "@/config/http-request";
 
 type Shape =
   | {
@@ -16,12 +17,21 @@ type Shape =
       height: number;
     };
 
-export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null, roomId: string, socket: WebSocket) => {
+export const initDraw = async (
+  canvas: HTMLCanvasElement,
+  tool: Tools | null,
+  roomId: string,
+  socket: WebSocket
+) => {
   const context = canvas.getContext("2d");
 
   if (!context || !tool) {
     return;
   }
+
+  const existingShapes = await getShapes(roomId);
+
+  drawExistingShapes(existingShapes, context);
 
   let click = false;
   let startY = 0;
@@ -31,25 +41,52 @@ export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null, roomId: 
     click = true;
     startX = e.clientX;
     startY = e.clientY;
-    console.log(e.clientX);
-    console.log(e.clientY);
   });
   canvas.addEventListener("mouseup", (e) => {
     click = false;
-    console.log(e.clientX);
-    console.log(e.clientY);
+    const width = e.clientX - startX;
+    const height = e.clientY - startY;
+    switch (tool) {
+      case "Rect": {
+        startDraw(socket, roomId, { startX, startY, width, height }, "Rect");
+        break;
+      }
+      case "Circle": {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        const radius = Math.max(height, width) / 2;
+        context.beginPath();
+        context.arc(
+          startX + radius,
+          startY + radius,
+          Math.abs(radius),
+          0,
+          2 * Math.PI
+        );
+        context.stroke();
+        context.closePath();
+        break;
+      }
+
+      case "Arrow": {
+        break;
+      }
+
+      default:
+        break;
+    }
   });
   canvas.addEventListener("mousemove", (e) => {
     if (click) {
       const width = e.clientX - startX;
       const height = e.clientY - startY;
       switch (tool) {
-        case "rect": {
+        case "Rect": {
           context.clearRect(0, 0, canvas.width, canvas.height);
+          drawExistingShapes(existingShapes, context);
           context.strokeRect(startX, startY, width, height);
           break;
         }
-        case "circle": {
+        case "Circle": {
           context.clearRect(0, 0, canvas.width, canvas.height);
           const radius = Math.max(height, width) / 2;
           context.beginPath();
@@ -65,7 +102,7 @@ export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null, roomId: 
           break;
         }
 
-        case "arrow": {
+        case "Arrow": {
           context.clearRect(0, 0, canvas.width, canvas.height);
 
           const startCoordinate = { x: startX, y: startY };
@@ -108,6 +145,37 @@ export const initDraw = (canvas: HTMLCanvasElement, tool: Tools | null, roomId: 
   });
 };
 
-function drawExistingShapes(existingShapes: Shape[], canvas: HTMLCanvasElement) {
-  
+async function drawExistingShapes(
+  existingShapes: any,
+  context: CanvasRenderingContext2D
+) {
+  existingShapes &&
+    existingShapes?.shapes?.map((shape: any) => {
+      if (shape.type == "Rect") {
+        const parsedData = JSON.parse(shape.content);
+        console.log(parsedData, "parsedData");
+        context.strokeRect(
+          parsedData?.startX,
+          parsedData?.startY,
+          parsedData?.width,
+          parsedData?.height
+        );
+      }
+    });
+}
+
+function startDraw(
+  socket: WebSocket,
+  roomId: string,
+  content: Record<string, string | number>,
+  type: string
+) {
+  socket.send(
+    JSON.stringify({
+      type: "draw",
+      room: roomId,
+      content,
+      toolType: type,
+    })
+  );
 }

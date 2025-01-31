@@ -6,12 +6,12 @@ import ErrorHandler from "../errors/error-handler";
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   // try {
   const token = req.headers["authorization"] || "";
+
   if (!token) {
     throw new ErrorHandler(401, "Unauthorized");
   }
   const decoded = jwt.verify(token, JWT_SECRET);
 
-  console.log(decoded, "sdfsdf");
   if (decoded as any) {
     // @ts-ignore
     req.userId = (decoded as any).payload.id;

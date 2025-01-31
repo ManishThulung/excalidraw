@@ -45,9 +45,17 @@ model Chat {
 
 model Shape {
   id        Int       @id @default(autoincrement())
+  type      ShapeType
   content   String
   roomId    Int
   room      Room      @relation(fields: [roomId], references: [id])
   userId    Int
   user      User      @relation(fields: [userId], references: [id])
+}
+
+enum ShapeType {
+  Rect
+  Circle
+  Arrow
+  Text
 }

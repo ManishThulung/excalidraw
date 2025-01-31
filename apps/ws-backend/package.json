@@ -13,6 +13,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "tsc": "^2.0.4",
+    "@repo/db": "*",
     "ws": "^8.18.0"
   },
   "keywords": [],
