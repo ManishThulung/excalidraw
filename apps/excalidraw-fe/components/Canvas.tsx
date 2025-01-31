@@ -28,9 +28,15 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     <>
       <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />
       <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-4 px-6 py-2 rounded-md">
-        <button onClick={() => handleClick("rect")}>rectangle</button>
-        <button onClick={() => handleClick("circle")}>circle</button>
-        <button onClick={() => handleClick("arrow")}>arraow</button>
+        <button className="text-black" onClick={() => handleClick("rect")}>
+          rectangle
+        </button>
+        <button className="text-black" onClick={() => handleClick("circle")}>
+          circle
+        </button>
+        <button className="text-black" onClick={() => handleClick("arrow")}>
+          arraow
+        </button>
         {/* <button>rectangle</button> */}
       </div>
     </>

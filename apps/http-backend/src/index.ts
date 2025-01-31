@@ -12,35 +12,31 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", authRouter);
 
-app.post(
-  "/api/room",
-  auth,
-  (req: any, res: Response, next: NextFunction) => {
-    const { data, success } = CreateRoomSchema.safeParse(req.body);
-    if (!success) {
-      throw new ErrorHandler(400, "Bad Request");
-    }
-    try {
-      const room = prisma.room.create({
-        data: {
-          slug: data.slug,
-          adminId: Number(req.userId),
-        },
-      });
-      if (!room) {
-        throw new ErrorHandler(500, "Internal server error");
-      }
-      res.status(201).json({
-        room,
-        message: "created successfull",
-      });
-    } catch (error) {
-      next(error);
-    }
+app.post("/api/room", auth, (req: any, res: Response, next: NextFunction) => {
+  const { data, success } = CreateRoomSchema.safeParse(req.body);
+  if (!success) {
+    throw new ErrorHandler(400, "Bad Request");
   }
-);
+  try {
+    const room = prisma.room.create({
+      data: {
+        slug: data.slug,
+        adminId: Number(req.userId),
+      },
+    });
+    if (!room) {
+      throw new ErrorHandler(500, "Internal server error");
+    }
+    res.status(201).json({
+      room,
+      message: "created successfull",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
-app.post(
+app.get(
   "/api/chats/:roomId",
   auth,
   async (req: Request, res: Response, next: NextFunction) => {
@@ -66,6 +62,33 @@ app.post(
     }
   }
 );
+
+app.get(
+  "/api/shapes/:roomId",
+  auth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const roomId = Number(req.params.roomId);
+    try {
+      const shapes = await prisma.shape.findMany({
+        where: {
+          id: roomId,
+        },
+        orderBy: {
+          id: "desc",
+        },
+      });
+      if (!shapes) {
+        throw new ErrorHandler(500, "Internal server error");
+      }
+      res.status(201).json({
+        shapes,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 app.get(
   "/api/room/:slug",
   async (req: Request, res: Response, next: NextFunction) => {
