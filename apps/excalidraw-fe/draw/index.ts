@@ -1,58 +1,85 @@
 import { Tools } from "@/components/Canvas";
-import { getShapes } from "@/config/http-request";
 
-type Shape =
-  | {
-      type: "rect";
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    }
-  | {
-      type: "circle";
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-
-export const initDraw = async (
+export const initDraw = (
   canvas: HTMLCanvasElement,
   tool: Tools | null,
   roomId: string,
-  socket: WebSocket
+  socket: WebSocket,
+  existingShapes: any
 ) => {
   const context = canvas.getContext("2d");
+  if (!context || !tool) return;
 
-  if (!context || !tool) {
-    return;
-  }
+  console.log(existingShapes, "existingShapes");
 
-  const existingShapes = await getShapes(roomId);
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    console.log(data, "data");
+    if (data.isDraw) {
+      existingShapes.shapes.push({
+        type: data.type,
+        userId: data.userId,
+        content: JSON.stringify(data.data),
+        roomId: data.roomId,
+      });
+      drawExistingShapes(existingShapes, context);
+    }
+  };
 
   drawExistingShapes(existingShapes, context);
 
   let click = false;
-  let startY = 0;
   let startX = 0;
+  let startY = 0;
 
-  canvas.addEventListener("mousedown", (e) => {
+  const mouseDownHandler = (e: MouseEvent) => {
     click = true;
     startX = e.clientX;
     startY = e.clientY;
-  });
-  canvas.addEventListener("mouseup", (e) => {
+  };
+
+  const mouseUpHandler = (e: MouseEvent) => {
     click = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
+
+    let shape: any;
+    if (tool === "Rect") {
+      shape = { startX, startY, width, height };
+    } else if (tool === "Circle") {
+      const radius = Math.max(height, width) / 2;
+      shape = {
+        centerX: startX + radius,
+        centerY: startY + radius,
+        radius,
+      };
+    }
+
+    if (shape) {
+      startDraw(socket, roomId, shape, tool);
+      existingShapes.shapes.push({
+        type: tool,
+        content: JSON.stringify(shape),
+        roomId,
+      });
+    }
+  };
+
+  const mouseMoveHandler = (e: MouseEvent) => {
+    if (!click) return;
+
+    const width = e.clientX - startX;
+    const height = e.clientY - startY;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    drawExistingShapes(existingShapes, context);
+
     switch (tool) {
-      case "Rect": {
-        startDraw(socket, roomId, { startX, startY, width, height }, "Rect");
+      case "Rect":
+        context.strokeRect(startX, startY, width, height);
         break;
-      }
-      case "Circle": {
-        context.clearRect(0, 0, canvas.width, canvas.height);
+      case "Circle":
         const radius = Math.max(height, width) / 2;
         context.beginPath();
         context.arc(
@@ -65,84 +92,48 @@ export const initDraw = async (
         context.stroke();
         context.closePath();
         break;
-      }
+      case "Arrow":
+        const startCoordinate = { x: startX, y: startY };
+        const endCoordinate = { x: e.clientX, y: e.clientY };
+        const headLength = 15;
+        const PI = Math.PI;
+        const degreesInRadians225 = (225 * PI) / 180;
+        const degreesInRadians135 = (135 * PI) / 180;
+        const dx = endCoordinate.x - startCoordinate.x;
+        const dy = endCoordinate.y - startCoordinate.y;
+        const angle = Math.atan2(dy, dx);
+        const x225 =
+          endCoordinate.x + headLength * Math.cos(angle + degreesInRadians225);
+        const y225 =
+          endCoordinate.y + headLength * Math.sin(angle + degreesInRadians225);
+        const x135 =
+          endCoordinate.x + headLength * Math.cos(angle + degreesInRadians135);
+        const y135 =
+          endCoordinate.y + headLength * Math.sin(angle + degreesInRadians135);
 
-      case "Arrow": {
-        break;
-      }
-
-      default:
+        context.beginPath();
+        context.moveTo(startCoordinate.x, startCoordinate.y);
+        context.lineTo(endCoordinate.x, endCoordinate.y);
+        context.moveTo(endCoordinate.x, endCoordinate.y);
+        context.lineTo(x225, y225);
+        context.moveTo(endCoordinate.x, endCoordinate.y);
+        context.lineTo(x135, y135);
+        context.stroke();
         break;
     }
-  });
-  canvas.addEventListener("mousemove", (e) => {
-    if (click) {
-      const width = e.clientX - startX;
-      const height = e.clientY - startY;
-      switch (tool) {
-        case "Rect": {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          drawExistingShapes(existingShapes, context);
-          context.strokeRect(startX, startY, width, height);
-          break;
-        }
-        case "Circle": {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          const radius = Math.max(height, width) / 2;
-          context.beginPath();
-          context.arc(
-            startX + radius,
-            startY + radius,
-            Math.abs(radius),
-            0,
-            2 * Math.PI
-          );
-          context.stroke();
-          context.closePath();
-          break;
-        }
+  };
 
-        case "Arrow": {
-          context.clearRect(0, 0, canvas.width, canvas.height);
+  // Add event listeners
+  canvas.addEventListener("mousedown", mouseDownHandler);
+  canvas.addEventListener("mouseup", mouseUpHandler);
+  canvas.addEventListener("mousemove", mouseMoveHandler);
 
-          const startCoordinate = { x: startX, y: startY };
-          const endCoordinate = { x: e.clientX, y: e.clientY };
-          const headLength = 15;
-          const PI = Math.PI;
-          const degreesInRadians225 = (225 * PI) / 180;
-          const degreesInRadians135 = (135 * PI) / 180;
-          const dx = endCoordinate.x - startCoordinate.x;
-          const dy = endCoordinate.y - startCoordinate.y;
-          const angle = Math.atan2(dy, dx);
-          const x225 =
-            endCoordinate.x +
-            headLength * Math.cos(angle + degreesInRadians225);
-          const y225 =
-            endCoordinate.y +
-            headLength * Math.sin(angle + degreesInRadians225);
-          const x135 =
-            endCoordinate.x +
-            headLength * Math.cos(angle + degreesInRadians135);
-          const y135 =
-            endCoordinate.y +
-            headLength * Math.sin(angle + degreesInRadians135);
-
-          context.beginPath();
-          context.moveTo(startCoordinate.x, startCoordinate.y);
-          context.lineTo(endCoordinate.x, endCoordinate.y);
-          context.moveTo(endCoordinate.x, endCoordinate.y);
-          context.lineTo(x225, y225);
-          context.moveTo(endCoordinate.x, endCoordinate.y);
-          context.lineTo(x135, y135);
-          context.stroke();
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
-  });
+  // ✅ Cleanup
+  return () => {
+    canvas.removeEventListener("mousedown", mouseDownHandler);
+    canvas.removeEventListener("mouseup", mouseUpHandler);
+    canvas.removeEventListener("mousemove", mouseMoveHandler);
+  };
 };
 
 async function drawExistingShapes(
@@ -153,13 +144,25 @@ async function drawExistingShapes(
     existingShapes?.shapes?.map((shape: any) => {
       if (shape.type == "Rect") {
         const parsedData = JSON.parse(shape.content);
-        console.log(parsedData, "parsedData");
         context.strokeRect(
           parsedData?.startX,
           parsedData?.startY,
           parsedData?.width,
           parsedData?.height
         );
+      }
+      if (shape.type == "Circle") {
+        const parsedData = JSON.parse(shape.content);
+        context.beginPath();
+        context.arc(
+          parsedData.centerX,
+          parsedData.centerY,
+          Math.abs(parsedData.radius),
+          0,
+          2 * Math.PI
+        );
+        context.stroke();
+        context.closePath();
       }
     });
 }

@@ -6,7 +6,7 @@ import ErrorHandler from "../errors/error-handler";
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = req.cookies;
-    console.log(token);
+    console.log(token, "token");
     // const token = req.headers["authorization"] || "";
 
     if (!token) {

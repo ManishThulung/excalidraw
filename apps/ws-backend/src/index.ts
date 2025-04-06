@@ -13,14 +13,17 @@ interface Room {
 let users: Record<string, Room[]> = {};
 
 wss.on("connection", function connection(ws, req) {
-  const url = req.url;
-  if (!url) {
-    ws.close();
-    return;
-  }
+  // console.log(req.headers.cookie?.split(" token=")[1], "sfasfda");
+  // const url = req.url;
+  // if (!url) {
+  //   ws.close();
+  //   return;
+  // }
 
-  const queryParams = new URLSearchParams(url.split("?")[1]);
-  const token = queryParams.get("token") || "";
+  // const queryParams = new URLSearchParams(url.split("?")[1]);
+  // const token = queryParams.get("token") || "";
+
+  const token = req.headers.cookie?.split(" token=")[1] || "";
 
   const decoded = jwt.verify(token, JWT_SECRET);
 
@@ -106,6 +109,9 @@ wss.on("connection", function connection(ws, req) {
       const payload = {
         data: contentData,
         type: toolType,
+        roomId: room,
+        userId,
+        isDraw: true,
       };
 
       users[room]?.forEach((user) => {

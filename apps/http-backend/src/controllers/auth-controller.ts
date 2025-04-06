@@ -67,7 +67,7 @@ export const signin = async (
     }
 
     const token = jwt.sign({ payload: existUser }, JWT_SECRET);
-
+    console.log(token, "send token");
     res.cookie("token", token, {
       httpOnly: true,
     });

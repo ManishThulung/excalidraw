@@ -110,7 +110,7 @@ app.get(
       if (!shapes) {
         throw new ErrorHandler(500, "Internal server error");
       }
-      res.status(201).json({
+      res.status(200).json({
         shapes,
       });
     } catch (error) {

@@ -21,7 +21,7 @@ const CreateRoom = () => {
       const res = await api.post("/room", { slug });
 
       if (res.data.success) {
-        router.push(`/room/${res.data.room.slug}`);
+        router.push(`/room/${res.data.room.id}`);
       }
     } catch (err: any) {
       setError(err.response.data.message);

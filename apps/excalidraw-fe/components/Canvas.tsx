@@ -1,5 +1,6 @@
 "use client";
 
+import { getShapes } from "@/config/http-request";
 import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 
@@ -8,6 +9,16 @@ export type Tools = "Rect" | "Circle" | "Arrow";
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawType, setDrawType] = useState<Tools | null>(null);
+  const [existingShapes, setExistingShapes] = useState(null);
+
+  useEffect(() => {
+    const fetchShapes = async () => {
+      const data = await getShapes(roomId);
+      setExistingShapes(data);
+    };
+
+    fetchShapes();
+  }, [roomId]);
 
   const handleClick = (type: Tools) => {
     setDrawType(type);
@@ -20,11 +31,19 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // const data = getShapes();
+      const cleanup = initDraw(
+        canvas,
+        drawType,
+        roomId,
+        socket,
+        existingShapes
+      );
 
-      initDraw(canvas, drawType, roomId, socket);
+      return () => {
+        cleanup?.();
+      };
     }
-  }, [drawType]);
+  }, [drawType, roomId, existingShapes]);
 
   return (
     <>
