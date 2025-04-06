@@ -15,18 +15,16 @@ const CreateRoom = () => {
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const name = formData.get("name");
+    const slug = formData.get("name");
 
     try {
-      const res = await api.post("/api/room", { name });
+      const res = await api.post("/room", { slug });
 
       if (res.data.success) {
-        router.push("/room");
-      } else {
-        setError("Signin failed. Please try again.");
+        router.push(`/room/${res.data.room.slug}`);
       }
-    } catch (err) {
-      setError("Something went wrong. Please try again later.");
+    } catch (err: any) {
+      setError(err.response.data.message);
     } finally {
       setLoading(false);
     }
@@ -35,33 +33,28 @@ const CreateRoom = () => {
     <div>
       <h1 className="text-2xl font-bold">Create a New Room</h1>
       <form
-        className="mt-4 flex justify-between items-center w-[500px]"
+        className="mt-4 flex flex-col justify-start w-[500px]"
         onSubmit={submitHandler}
       >
-        <div className="flex flex-col">
-          {/* <label
-            htmlFor="name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Room Name
-          </label> */}
+        <div className="flex gap-6 items-center">
           <input
             type="text"
             id="name"
             name="name"
             required
             placeholder="Room Name"
-            className="block px-4 w-[370px] h-[39px] rounded-md border border-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="block px-4 w-[350px] h-[39px] rounded-md border border-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {loading ? "Creating..." : "Create Room"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          {loading ? "Creating..." : "Create Room"}
-        </button>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
       </form>
     </div>
   );

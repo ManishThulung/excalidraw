@@ -5,11 +5,14 @@ import { auth } from "./middleware/auth-middleware";
 import ErrorHandler from "./errors/error-handler";
 import { prisma } from "@repo/db/prisma";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import { Prisma } from "@prisma/client";
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const corsOptions = {
   origin: ["http://localhost:3000", "http://127.0.0.1:3001"],
@@ -22,29 +25,39 @@ app.use(cors(corsOptions));
 app.use("/api", authRouter);
 
 // create room
-app.post("/api/room", auth, (req: any, res: Response, next: NextFunction) => {
-  const { data, success } = CreateRoomSchema.safeParse(req.body);
-  if (!success) {
-    throw new ErrorHandler(400, "Bad Request");
-  }
-  try {
-    const room = prisma.room.create({
-      data: {
-        slug: data.slug,
-        adminId: Number(req.userId),
-      },
-    });
-    if (!room) {
-      throw new ErrorHandler(500, "Internal server error");
+app.post(
+  "/api/room",
+  auth,
+  async (req: any, res: Response, next: NextFunction) => {
+    const { data, success } = CreateRoomSchema.safeParse(req.body);
+    if (!success) {
+      throw new ErrorHandler(400, "Bad Request");
     }
-    res.status(201).json({
-      room,
-      message: "created successfull",
-    });
-  } catch (error) {
-    next(error);
+    try {
+      const room = await prisma.room.create({
+        data: {
+          slug: data.slug,
+          adminId: Number(req.userId),
+        },
+      });
+      if (!room) {
+        throw new ErrorHandler(500, "Internal server error");
+      }
+      res.status(201).json({
+        success: true,
+        room,
+        message: "created successfull",
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2002") {
+          return next(new ErrorHandler(400, "Room already exists."));
+        }
+      }
+      next(err);
+    }
   }
-});
+);
 
 app.get(
   "/api/chats/:roomId",
