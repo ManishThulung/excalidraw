@@ -6,7 +6,7 @@ export const Button = ({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) => {
   return (
-    <button className={className} {...props}>
+    <button className={"text-3xl bg-blue-500"} {...props}>
       {children}
     </button>
   );

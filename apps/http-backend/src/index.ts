@@ -10,10 +10,18 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+const corsOptions = {
+  origin: ["http://localhost:3000", "http://127.0.0.1:3001"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use("/api", authRouter);
 
+// create room
 app.post("/api/room", auth, (req: any, res: Response, next: NextFunction) => {
   const { data, success } = CreateRoomSchema.safeParse(req.body);
   if (!success) {
