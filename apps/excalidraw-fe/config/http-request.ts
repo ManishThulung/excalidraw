@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export async function getShapes(roomId: string) {
   const res = await fetch(`http://localhost:4000/api/shapes/${roomId}`, {
     method: "GET",
@@ -10,3 +12,8 @@ export async function getShapes(roomId: string) {
   const data = await res.json();
   return data;
 }
+
+export const api = axios.create({
+  baseURL: "http://localhost:4000/api",
+  withCredentials: true,
+});
