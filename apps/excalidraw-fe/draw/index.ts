@@ -1,28 +1,45 @@
 import { Tools } from "@/components/Canvas";
+import { getShapes } from "@/config/http-request";
 
-export const initDraw = (
+async function getData(roomId: string) {
+  const res = await getShapes(roomId);
+  return res.shapes;
+}
+
+export const initDraw = async (
   canvas: HTMLCanvasElement,
   tool: Tools | null,
   roomId: string,
-  socket: WebSocket,
-  existingShapes: any
+  socket: WebSocket
+  // existingShapes: any,
+  // setExistingShapes: any
 ) => {
   const context = canvas.getContext("2d");
   if (!context || !tool) return;
 
-  console.log(existingShapes, "existingShapes");
+  const existingShapes = await getData(roomId);
 
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
     console.log(data, "data");
     if (data.isDraw) {
-      existingShapes.shapes.push({
+      existingShapes.push({
         type: data.type,
         userId: data.userId,
         content: JSON.stringify(data.data),
         roomId: data.roomId,
       });
+      // setExistingShapes((prev) => [
+      //   ...prev,
+
+      //   {
+      //     type: data.type,
+      //     userId: data.userId,
+      //     content: JSON.stringify(data.data),
+      //     roomId: data.roomId,
+      //   },
+      // ]);
       drawExistingShapes(existingShapes, context);
     }
   };
@@ -58,7 +75,7 @@ export const initDraw = (
 
     if (shape) {
       startDraw(socket, roomId, shape, tool);
-      existingShapes.shapes.push({
+      existingShapes.push({
         type: tool,
         content: JSON.stringify(shape),
         roomId,
@@ -129,11 +146,11 @@ export const initDraw = (
   canvas.addEventListener("mousemove", mouseMoveHandler);
 
   // ✅ Cleanup
-  return () => {
-    canvas.removeEventListener("mousedown", mouseDownHandler);
-    canvas.removeEventListener("mouseup", mouseUpHandler);
-    canvas.removeEventListener("mousemove", mouseMoveHandler);
-  };
+  // return () => {
+  //   canvas.removeEventListener("mousedown", mouseDownHandler);
+  //   canvas.removeEventListener("mouseup", mouseUpHandler);
+  //   canvas.removeEventListener("mousemove", mouseMoveHandler);
+  // };
 };
 
 async function drawExistingShapes(
@@ -141,7 +158,7 @@ async function drawExistingShapes(
   context: CanvasRenderingContext2D
 ) {
   existingShapes &&
-    existingShapes?.shapes?.map((shape: any) => {
+    existingShapes?.map((shape: any) => {
       if (shape.type == "Rect") {
         const parsedData = JSON.parse(shape.content);
         context.strokeRect(

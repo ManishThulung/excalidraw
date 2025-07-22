@@ -22,9 +22,12 @@ wss.on("connection", function connection(ws, req) {
 
   // const queryParams = new URLSearchParams(url.split("?")[1]);
   // const token = queryParams.get("token") || "";
-
-  const token = req.headers.cookie?.split(" token=")[1] || "";
-
+  console.log(req.headers, "headersssssssssssss");
+  const token =
+    req.headers.cookie?.split(" token=")[1] ||
+    req.headers.cookie?.split("token=")[1] ||
+    "";
+  console.log(token, "tokentokentokentoken");
   const decoded = jwt.verify(token, JWT_SECRET);
 
   // @ts-ignore

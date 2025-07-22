@@ -1,7 +1,7 @@
 "use client";
 
 import { useSocket } from "@/hooks/useSocket";
-import React from "react";
+import React, { useEffect } from "react";
 import Canvas from "./Canvas";
 
 const CanvasRoom = ({ roomId }: { roomId: string }) => {
@@ -14,3 +14,16 @@ const CanvasRoom = ({ roomId }: { roomId: string }) => {
 };
 
 export default CanvasRoom;
+
+// function Canvas({ socket }: { socket: any }) {
+//   useEffect(() => {
+//     socket.onmessage = (e) => {
+//       console.log(e, "eee");
+//     };
+//   }, [socket]);
+
+//   /// rest of the code
+//   return <div>hello</div>;
+// }
+
+// Socket.onmessage is not listining incoming messages
