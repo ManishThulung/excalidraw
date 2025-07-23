@@ -62,6 +62,10 @@ interface DrawingState {
   dragMode: "none" | "move" | "resize" | "rotate";
   dragStart: Point;
   dragOffset: Point;
+  // Text editing states
+  isEditingText: boolean;
+  editingTextId: string | null;
+  textInputPosition: Point | null;
 }
 
 type DrawingAction =
@@ -93,6 +97,9 @@ type DrawingAction =
     }
   | { type: "UPDATE_DRAG"; point: Point }
   | { type: "FINISH_DRAG" }
+  | { type: "START_TEXT_EDITING"; point: Point; textId?: string }
+  | { type: "FINISH_TEXT_EDITING"; text: string }
+  | { type: "CANCEL_TEXT_EDITING" }
   | { type: "SAVE_TO_HISTORY" }
   | { type: "UNDO" }
   | { type: "REDO" }
@@ -105,8 +112,7 @@ const initialState: DrawingState = {
   history: [[]],
   historyIndex: 0,
   strokeColor: "#000000",
-  // fillColor: "transparent",
-  fillColor: "#FFB3B3",
+  fillColor: "transparent",
   strokeWidth: 2,
   fontSize: 16,
   scale: 1,
@@ -119,6 +125,9 @@ const initialState: DrawingState = {
   dragMode: "none",
   dragStart: { x: 0, y: 0 },
   dragOffset: { x: 0, y: 0 },
+  isEditingText: false,
+  editingTextId: null,
+  textInputPosition: null,
 };
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -135,6 +144,9 @@ function drawingReducer(
         isCreatingShape: false,
         previewShape: null,
         dragMode: "none",
+        isEditingText: false,
+        editingTextId: null,
+        textInputPosition: null,
       };
 
     case "ADD_OBJECT":
@@ -359,6 +371,62 @@ function drawingReducer(
         dragMode: "none",
       };
 
+    case "START_TEXT_EDITING":
+      return {
+        ...state,
+        isEditingText: true,
+        editingTextId: action.textId || null,
+        textInputPosition: action.point,
+      };
+
+    case "FINISH_TEXT_EDITING":
+      if (state.editingTextId) {
+        // Update existing text object
+        return {
+          ...state,
+          objects: state.objects.map((obj) =>
+            obj.id === state.editingTextId ? { ...obj, text: action.text } : obj
+          ),
+          isEditingText: false,
+          editingTextId: null,
+          textInputPosition: null,
+        };
+      } else if (state.textInputPosition && action.text.trim()) {
+        // Create new text object
+        const textObject: DrawingObject = {
+          id: generateId(),
+          type: "text",
+          x: state.textInputPosition.x,
+          y: state.textInputPosition.y,
+          text: action.text.trim(),
+          fontSize: state.fontSize,
+          stroke: state.strokeColor,
+          fill: "transparent",
+          strokeWidth: state.strokeWidth,
+        };
+        return {
+          ...state,
+          objects: [...state.objects, textObject],
+          isEditingText: false,
+          editingTextId: null,
+          textInputPosition: null,
+        };
+      }
+      return {
+        ...state,
+        isEditingText: false,
+        editingTextId: null,
+        textInputPosition: null,
+      };
+
+    case "CANCEL_TEXT_EDITING":
+      return {
+        ...state,
+        isEditingText: false,
+        editingTextId: null,
+        textInputPosition: null,
+      };
+
     case "SAVE_TO_HISTORY":
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push([...state.objects]);
@@ -466,6 +534,15 @@ export function DrawingProvider({ children }: { children: React.ReactNode }) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when editing text
+      if (state.isEditingText) {
+        // Only handle Escape in text editing mode
+        if (e.key === "Escape") {
+          dispatch({ type: "CANCEL_TEXT_EDITING" });
+        }
+        return;
+      }
+
       if (
         (e.ctrlKey || e.metaKey) &&
         ["z", "y", "s"].includes(e.key.toLowerCase())
@@ -478,6 +555,12 @@ export function DrawingProvider({ children }: { children: React.ReactNode }) {
           e.preventDefault();
           dispatch({ type: "DELETE_SELECTED" });
           dispatch({ type: "SAVE_TO_HISTORY" });
+        }
+      }
+
+      if (e.key === "Escape") {
+        if (state.isEditingText) {
+          dispatch({ type: "CANCEL_TEXT_EDITING" });
         }
       }
 
@@ -535,7 +618,7 @@ export function DrawingProvider({ children }: { children: React.ReactNode }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [state.selectedIds, saveToStorage]);
+  }, [state.selectedIds, state.isEditingText, saveToStorage]);
 
   return (
     <DrawingContext.Provider
