@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,94 +27,93 @@ import {
   Calendar,
   Settings,
   Trash2,
-  Link as LinkIcon,
+  Link,
   Search,
 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/config/http-request";
-import Link from "next/link";
 
 interface Room {
   id: string;
-  slug: string;
+  name: string;
+  code: string;
+  createdBy: string;
+  participants: number;
   createdAt: string;
-  adminId: string;
-  admin: {
-    id: string;
-    username: string;
-  };
-  // code: string;
-  // createdBy: string;
-  // participants: number;
-  // isOwner: boolean;
+  isOwner: boolean;
 }
 
 const Dashboard = () => {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([
+    {
+      id: "1",
+      name: "Design Brainstorm",
+      code: "ABC123",
+      createdBy: "You",
+      participants: 3,
+      createdAt: "2024-01-15",
+      isOwner: true,
+    },
+    {
+      id: "2",
+      name: "Team Planning",
+      code: "XYZ789",
+      createdBy: "John Doe",
+      participants: 5,
+      createdAt: "2024-01-14",
+      isOwner: false,
+    },
+    {
+      id: "3",
+      name: "Architecture Review",
+      code: "DEF456",
+      createdBy: "You",
+      participants: 2,
+      createdAt: "2024-01-13",
+      isOwner: true,
+    },
+  ]);
 
-  const [loading, setLoading] = useState<boolean>(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = () => {
     if (newRoomName.trim()) {
-      try {
-        const res = await api.post("/room", { slug: newRoomName });
-
-        if (res.data.success) {
-          setRooms([res.data.room, ...rooms]);
-          setNewRoomName("");
-          setIsCreateDialogOpen(false);
-          toast.success("Room created successfully!");
-        }
-      } catch (err: any) {
-        // setError(err.response.data.message);
-        toast.error(err.response.data.message);
-      }
+      const newRoom: Room = {
+        id: Date.now().toString(),
+        name: newRoomName,
+        code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        createdBy: "You",
+        participants: 1,
+        createdAt: new Date().toISOString().split("T")[0],
+        isOwner: true,
+      };
+      setRooms([newRoom, ...rooms]);
+      setNewRoomName("");
+      setIsCreateDialogOpen(false);
+      toast.success("Room created successfully!");
     }
   };
 
   const handleJoinRoom = () => {
-    // if (joinCode.trim()) {
-    //   toast.message("Joining room...");
-    //   setJoinCode("");
-    // }
+    if (joinCode.trim()) {
+      toast.message("Joining room...");
+      setJoinCode("");
+    }
   };
 
   const handleDeleteRoom = (roomId: string) => {
-    // setRooms(rooms.filter((room) => room.id !== roomId));
-    // toast.success("The room has been permanently deleted.");
+    setRooms(rooms.filter((room) => room.id !== roomId));
+    toast.success("The room has been permanently deleted.");
   };
 
-  const filteredRooms = rooms.filter((room) =>
-    room.slug.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRooms = rooms.filter(
+    (room) =>
+      room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  useEffect(() => {
-    const getData = async () => {
-      setLoading(false);
-
-      try {
-        const res = await api.get("/room");
-
-        if (res.data.success) {
-          setRooms(res.data.rooms);
-        }
-      } catch (err: any) {
-        // setError(err.response.data.message);
-        console.log(err.response.data.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
-  }, []);
-  console.log(rooms, "rooms");
-  if (loading) {
-    return <div>loading....</div>;
-  }
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -140,7 +139,7 @@ const Dashboard = () => {
                 />
               </div>
               <Button variant="outline" onClick={() => setJoinCode("")}>
-                <LinkIcon className="h-4 w-4 mr-2" />
+                <Link className="h-4 w-4 mr-2" />
                 Join Room
               </Button>
               <Dialog
@@ -268,13 +267,13 @@ const Dashboard = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-foreground text-lg mb-1">
-                        {room.slug}
+                        {room.name}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">
-                          {room.id}
+                          {room.code}
                         </Badge>
-                        {room.id && (
+                        {room.isOwner && (
                           <Badge
                             variant="outline"
                             className="text-xs border-primary text-primary"
@@ -284,7 +283,7 @@ const Dashboard = () => {
                         )}
                       </div>
                     </div>
-                    {/* {room.isOwner && (
+                    {room.isOwner && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Settings className="h-4 w-4" />
@@ -298,7 +297,7 @@ const Dashboard = () => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    )} */}
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -307,27 +306,22 @@ const Dashboard = () => {
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
                         <span>
-                          5 participant
-                          {/* {room.participants} participant
-                          {room.participants !== 1 ? "s" : ""} */}
+                          {room.participants} participant
+                          {room.participants !== 1 ? "s" : ""}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{room.createdAt.toString().split("T")[0]}</span>
+                        <span>{room.createdAt}</span>
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Created by:{" "}
-                      <span className="text-foreground">
-                        {room.admin.username}
-                      </span>
+                      <span className="text-foreground">{room.createdBy}</span>
                     </div>
-                    <Link href={`/draw/${room.id}`}>
-                      <Button className="w-full" variant="default">
-                        Enter Room
-                      </Button>
-                    </Link>
+                    <Button className="w-full" variant="default">
+                      Enter Room
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

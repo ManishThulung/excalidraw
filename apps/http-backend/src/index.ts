@@ -60,6 +60,32 @@ app.post(
 );
 
 app.get(
+  "/api/room",
+  auth,
+  async (req: any, res: Response, next: NextFunction) => {
+    try {
+      const rooms = await prisma.room.findMany({
+        where: {
+          adminId: Number(req.userId),
+        },
+        include: {
+          admin: { select: { id: true, username: true } },
+        },
+      });
+      if (!rooms) {
+        throw new ErrorHandler(404, "Rooms not found!");
+      }
+      res.status(200).json({
+        success: true,
+        rooms,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+app.get(
   "/api/chats/:roomId",
   auth,
   async (req: Request, res: Response, next: NextFunction) => {

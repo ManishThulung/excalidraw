@@ -490,8 +490,6 @@ export function DrawingProvider({ children }: { children: React.ReactNode }) {
       strokeWidth: state.strokeWidth,
       fontSize: state.fontSize,
     };
-
-    console.log(dataToSave, "dataToSave");
     localStorage.setItem("drawing-tool-data", JSON.stringify(dataToSave));
   }, [state]);
 

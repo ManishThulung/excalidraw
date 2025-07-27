@@ -22,7 +22,7 @@ const Page = () => {
       const res = await api.post("/sign-in", { username, password });
 
       if (res.data.success) {
-        router.push("/room");
+        router.push("/draw");
       } else {
         setError("Signin failed. Please try again.");
       }

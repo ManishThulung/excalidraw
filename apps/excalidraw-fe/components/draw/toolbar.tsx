@@ -3,10 +3,7 @@
 import type React from "react";
 
 import { useDrawing } from "@/contexts/drawing-context";
-// import { Button } from "@/components/ui/button"
-// import { Separator } from "@/components/ui/separator"
-// import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
+//  import { Separator } from "@/components/ui/separator"
 import {
   MousePointer2,
   Square,
@@ -27,21 +24,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 
 export function Toolbar() {
   const { state, dispatch, exportToJSON, importFromJSON } = useDrawing();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tools = [
-    { id: "select", icon: MousePointer2, label: "Select (V)" },
-    { id: "rectangle", icon: Square, label: "Rectangle (R)" },
-    { id: "circle", icon: Circle, label: "Circle (C)" },
-    { id: "line", icon: Minus, label: "Line (L)" },
-    { id: "arrow", icon: ArrowRight, label: "Arrow (A)" },
-    { id: "pencil", icon: Pencil, label: "Pencil (P)" },
-    { id: "text", icon: Type, label: "Text (T)" },
-    { id: "eraser", icon: Eraser, label: "Eraser (E)" },
-    { id: "hand", icon: Hand, label: "Hand (H)" },
+    { id: "select", icon: MousePointer2, Label: "Select (V)" },
+    { id: "rectangle", icon: Square, Label: "Rectangle (R)" },
+    { id: "circle", icon: Circle, Label: "Circle (C)" },
+    { id: "line", icon: Minus, Label: "Line (L)" },
+    { id: "arrow", icon: ArrowRight, Label: "Arrow (A)" },
+    { id: "pencil", icon: Pencil, Label: "Pencil (P)" },
+    { id: "text", icon: Type, Label: "Text (T)" },
+    { id: "eraser", icon: Eraser, Label: "Eraser (E)" },
+    { id: "hand", icon: Hand, Label: "Hand (H)" },
   ];
 
   const handleExport = () => {
@@ -81,23 +81,23 @@ export function Toolbar() {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-2 flex-wrap">
+    <div className="bg-gray-700 border-b border-gray-200 p-2 flex items-center gap-2 flex-wrap">
       {/* Tools */}
       <div className="flex items-center gap-1">
-        {tools.map(({ id, icon: Icon, label }) => (
-          <button
+        {tools.map(({ id, icon: Icon, Label }) => (
+          <Button
             key={id}
-            // variant={state.tool === id ? "default" : "ghost"}
-            // size="sm"
+            variant={state.tool === id ? "default" : "ghost"}
+            size="sm"
             onClick={() => dispatch({ type: "SET_TOOL", tool: id as any })}
-            title={label}
+            title={Label}
             className={cn(
               "w-8 h-8 p-0",
               state.tool === id && "bg-blue-100 text-blue-700 border-blue-300"
             )}
           >
             <Icon className="w-4 h-4" />
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -106,10 +106,10 @@ export function Toolbar() {
       {/* Colors */}
       <div className="flex items-center gap-2">
         <div className="flex flex-col gap-1">
-          <label htmlFor="stroke-color" className="text-xs">
+          <Label htmlFor="stroke-color" className="text-xs">
             Stroke
-          </label>
-          <input
+          </Label>
+          <Input
             id="stroke-color"
             type="color"
             value={state.strokeColor}
@@ -120,11 +120,11 @@ export function Toolbar() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="fill-color" className="text-xs">
+          <Label htmlFor="fill-color" className="text-xs">
             Fill
-          </label>
+          </Label>
           <div className="relative">
-            <input
+            <Input
               id="fill-color"
               type="color"
               value={
@@ -140,9 +140,9 @@ export function Toolbar() {
             )}
           </div>
         </div>
-        <button
-          // variant="ghost"
-          // size="sm"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() =>
             dispatch({
               type: "SET_FILL_COLOR",
@@ -153,17 +153,17 @@ export function Toolbar() {
           className="text-xs px-2"
         >
           {state.fillColor === "transparent" ? "No Fill" : "Fill"}
-        </button>
+        </Button>
       </div>
 
       {/* <Separator orientation="vertical" className="h-6" /> */}
 
       {/* Stroke Width */}
       <div className="flex items-center gap-2">
-        <label htmlFor="stroke-width" className="text-xs">
+        <Label htmlFor="stroke-width" className="text-xs">
           Width
-        </label>
-        <input
+        </Label>
+        <Input
           id="stroke-width"
           type="range"
           min="1"
@@ -185,10 +185,10 @@ export function Toolbar() {
         <>
           {/* <Separator orientation="vertical" className="h-6" /> */}
           <div className="flex items-center gap-2">
-            <label htmlFor="font-size" className="text-xs">
+            <Label htmlFor="font-size" className="text-xs">
               Size
-            </label>
-            <input
+            </Label>
+            <Input
               id="font-size"
               type="number"
               min="8"
@@ -210,67 +210,57 @@ export function Toolbar() {
 
       {/* Zoom */}
       <div className="flex items-center gap-1">
-        <button
-          // variant="ghost"
-          //  size="sm"
-          onClick={zoomOut}
-          title="Zoom Out"
-        >
+        <Button variant="ghost" size="sm" onClick={zoomOut} title="Zoom Out">
           <ZoomOut className="w-4 h-4" />
-        </button>
+        </Button>
         <span className="text-xs w-12 text-center">
           {Math.round(state.scale * 100)}%
         </span>
-        <button
-          // variant="ghost"
-          //  size="sm"
-          onClick={zoomIn}
-          title="Zoom In"
-        >
+        <Button variant="ghost" size="sm" onClick={zoomIn} title="Zoom In">
           <ZoomIn className="w-4 h-4" />
-        </button>
-        <button
-          // variant="ghost"
-          //  size="sm"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={resetZoom}
           title="Reset Zoom"
           className="text-xs px-2"
         >
           Reset
-        </button>
+        </Button>
       </div>
 
       {/* <Separator orientation="vertical" className="h-6" /> */}
 
       {/* History */}
       <div className="flex items-center gap-1">
-        <button
-          // variant="ghost"
-          // size="sm"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => dispatch({ type: "UNDO" })}
           title="Undo (Ctrl+Z)"
           disabled={state.historyIndex <= 0}
         >
           <RotateCcw className="w-4 h-4" />
-        </button>
-        <button
-          // variant="ghost"
-          // size="sm"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => dispatch({ type: "REDO" })}
           title="Redo (Ctrl+Y)"
           disabled={state.historyIndex >= state.history.length - 1}
         >
           <RotateCw className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       {/* <Separator orientation="vertical" className="h-6" /> */}
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        <button
-          // variant="ghost"
-          // size="sm"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
             dispatch({ type: "DELETE_SELECTED" });
             dispatch({ type: "SAVE_TO_HISTORY" });
@@ -279,22 +269,24 @@ export function Toolbar() {
           disabled={state.selectedIds.length === 0}
         >
           <Trash2 className="w-4 h-4" />
-        </button>
-        <button
-          // variant="ghost" size="sm"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleExport}
           title="Export JSON"
         >
           <Download className="w-4 h-4" />
-        </button>
-        <button
-          // variant="ghost" size="sm"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => fileInputRef.current?.click()}
           title="Import JSON"
         >
           <Upload className="w-4 h-4" />
-        </button>
-        <input
+        </Button>
+        <Input
           ref={fileInputRef}
           type="file"
           accept=".json"

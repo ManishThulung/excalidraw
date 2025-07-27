@@ -1,4 +1,4 @@
-import { HoverEffect } from "@/components/ui/card";
+// import { HoverEffect } from "@/components/ui/card";
 import CreateRoom from "./create-room";
 
 const page = () => {
@@ -8,7 +8,7 @@ const page = () => {
         <h1 className="text-4xl font-bold mb-4">Welcome to the Room</h1>
         <p className="text-lg mb-8">Here are some projects you can explore:</p>
         <CreateRoom />
-        <HoverEffect items={projects} />
+        {/* <HoverEffect items={projects} /> */}
       </div>
     </div>
   );
