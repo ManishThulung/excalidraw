@@ -5,4 +5,5 @@ export enum Tools {
   Text = "Text",
   Pencil = "Pencil",
   Line = "Line",
+  Select = "Select",
 }
