@@ -1,12 +1,12 @@
-import express, { NextFunction, Request, Response } from "express";
-import authRouter from "./routes/auth-routes";
-import { CreateRoomSchema } from "@repo/common/schema";
-import { auth } from "./middleware/auth-middleware";
-import ErrorHandler from "./errors/error-handler";
-import { prisma } from "@repo/db/prisma";
-import cors from "cors";
-import cookieParser from "cookie-parser";
 import { Prisma } from "@prisma/client";
+import { CreateRoomSchema } from "@repo/common/schema";
+import { prisma } from "@repo/db/prisma";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { NextFunction, Request, Response } from "express";
+import ErrorHandler from "./errors/error-handler";
+import { auth } from "./middleware/auth-middleware";
+import authRouter from "./routes/auth-routes";
 
 const app = express();
 
@@ -56,7 +56,7 @@ app.post(
       }
       next(err);
     }
-  }
+  },
 );
 
 app.get(
@@ -82,7 +82,7 @@ app.get(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 app.get(
@@ -109,7 +109,7 @@ app.get(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 app.get(
@@ -142,7 +142,7 @@ app.get(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 app.get(
@@ -164,7 +164,7 @@ app.get(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -173,15 +173,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     message: error.message,
   });
 });
-
 app.use(
   (err: ErrorHandler, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || 500;
     const message = err.message || "Internal server error";
+    const error = err.error || undefined;
     res.status(status).json({
       message,
+      error,
     });
-  }
+  },
 );
 
 app.listen(4000, () => {

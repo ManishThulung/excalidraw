@@ -1,13 +1,3 @@
-// import HeroSection from "@/components/HeroSection";
-
-// export default function Home() {
-//   return (
-//     <div>
-//       <HeroSection />
-//     </div>
-//   );
-// }
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -266,6 +256,7 @@ const Home = () => {
                   width={100}
                   className="w-full h-auto rounded-lg"
                   priority
+                  unoptimized
                   quality={90}
                 />
               </CardContent>

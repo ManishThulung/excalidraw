@@ -6,8 +6,6 @@ import ErrorHandler from "../errors/error-handler";
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = req.cookies;
-    console.log(token, "token");
-    // const token = req.headers["authorization"] || "";
 
     if (!token) {
       throw new ErrorHandler(401, "Unauthorized");
@@ -24,7 +22,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
       });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(error);
   }
 };

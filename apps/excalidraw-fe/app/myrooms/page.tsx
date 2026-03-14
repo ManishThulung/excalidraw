@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,8 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -20,19 +18,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Plus,
-  Users,
-  Calendar,
-  Settings,
-  Trash2,
-  Link as LinkIcon,
-  Search,
-} from "lucide-react";
-import { toast } from "sonner";
 import { api } from "@/config/http-request";
+import { Calendar, Link as LinkIcon, Plus, Search, Users } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Room {
   id: string;
@@ -89,7 +81,7 @@ const Dashboard = () => {
   };
 
   const filteredRooms = rooms.filter((room) =>
-    room.slug.toLowerCase().includes(searchQuery.toLowerCase())
+    room.slug.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   useEffect(() => {
@@ -323,7 +315,7 @@ const Dashboard = () => {
                         {room.admin.username}
                       </span>
                     </div>
-                    <Link href={`/draw/${room.id}`}>
+                    <Link href={`/rooms/${room.id}`}>
                       <Button className="w-full" variant="default">
                         Enter Room
                       </Button>

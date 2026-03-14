@@ -1,11 +1,15 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "ShapeType" AS ENUM ('Rectangle', 'Circle', 'Arrow', 'Text', 'Pencil', 'Line');
 
-  - Added the required column `photo` to the `User` table without a default value. This is not possible if the table is not empty.
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "photo" TEXT,
 
-*/
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "photo" TEXT NOT NULL;
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Room" (
@@ -27,6 +31,20 @@ CREATE TABLE "Chat" (
     CONSTRAINT "Chat_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Shape" (
+    "id" SERIAL NOT NULL,
+    "type" "ShapeType" NOT NULL,
+    "content" JSONB NOT NULL,
+    "roomId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+
+    CONSTRAINT "Shape_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Room_slug_key" ON "Room"("slug");
 
@@ -38,3 +56,9 @@ ALTER TABLE "Chat" ADD CONSTRAINT "Chat_roomId_fkey" FOREIGN KEY ("roomId") REFE
 
 -- AddForeignKey
 ALTER TABLE "Chat" ADD CONSTRAINT "Chat_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Shape" ADD CONSTRAINT "Shape_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "Room"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Shape" ADD CONSTRAINT "Shape_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

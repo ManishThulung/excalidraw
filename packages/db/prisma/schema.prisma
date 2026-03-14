@@ -45,7 +45,7 @@ model Chat {
 model Shape {
   id        Int       @id @default(autoincrement())
   type      ShapeType
-  content   String
+  content   Json
   roomId    Int
   room      Room      @relation(fields: [roomId], references: [id])
   userId    Int
@@ -53,8 +53,10 @@ model Shape {
 }
 
 enum ShapeType {
-  Rect
+  Rectangle
   Circle
   Arrow
   Text
+  Pencil
+  Line
 }

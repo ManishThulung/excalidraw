@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { prisma } from "@repo/db/prisma";
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: 8090 });
 
 interface Room {
   ws: WebSocket;
@@ -22,19 +22,24 @@ wss.on("connection", function connection(ws, req) {
 
   // const queryParams = new URLSearchParams(url.split("?")[1]);
   // const token = queryParams.get("token") || "";
-  console.log(req.headers, "headersssssssssssss");
   const token =
     req.headers.cookie?.split(" token=")[1] ||
     req.headers.cookie?.split("token=")[1] ||
     "";
   console.log(token, "tokentokentokentoken");
-  const decoded = jwt.verify(token, JWT_SECRET);
+  let userId: string;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-  // @ts-ignore
-  const userId = decoded.payload.id;
+    // @ts-ignore
+    userId = decoded.payload.id;
 
-  // @ts-ignore
-  if (!decoded && !decoded.payload.id) {
+    // @ts-ignore
+    if (!decoded && !decoded.payload.id) {
+      ws.close();
+      return;
+    }
+  } catch (error) {
     ws.close();
     return;
   }
@@ -54,8 +59,8 @@ wss.on("connection", function connection(ws, req) {
     const parsedData = JSON.parse(data as unknown as string);
 
     if (parsedData.type == "join_room") {
-      console.log(`join room ${userId}`);
       const { room } = parsedData;
+      console.log(`user: ${userId} joined room ${room}`);
       if (!users[room]) {
         users[room] = [];
       }
@@ -63,8 +68,8 @@ wss.on("connection", function connection(ws, req) {
     }
 
     if (parsedData.type == "leave_room") {
-      console.log(`leave room ${userId}`);
       const { room } = parsedData;
+      console.log(`user: ${userId} left room ${room}`);
 
       if (!users[room]) {
         ws.close();
@@ -99,14 +104,12 @@ wss.on("connection", function connection(ws, req) {
     }
 
     if (parsedData.type == "draw") {
-      console.log(`drawn by ${userId}`);
       const { room, content, toolType } = parsedData;
+      console.log(`drawn ${toolType} by user: ${userId} in room: ${room}`);
       if (!users[room]) {
         ws.close();
         return;
       }
-
-      console.log(toolType, "toolType");
 
       const contentData = JSON.stringify(content);
       const payload = {
@@ -121,16 +124,37 @@ wss.on("connection", function connection(ws, req) {
         user && user.ws.send(JSON.stringify(payload));
       });
 
-      await prisma.shape.create({
-        data: {
-          type: toolType,
-          content: contentData,
-          roomId: Number(room),
-          userId,
-        },
-      });
+      try {
+        await prisma.shape.create({
+          data: {
+            type: toolType,
+            content: contentData,
+            roomId: Number(room),
+            userId: Number(userId),
+          },
+        });
+      } catch (error) {
+        console.error("Error saving shape to database:", error);
+      }
     }
   });
 
   ws.send("socket connection successful");
 });
+
+function shutdown() {
+  console.log("Shutting down WebSocket server...");
+
+  wss.clients.forEach((client) => {
+    client.close();
+  });
+
+  wss.close(() => {
+    console.log("WebSocket server closed");
+    process.exit(0);
+  });
+}
+
+process.on("SIGINT", shutdown); // Ctrl + C
+process.on("SIGTERM", shutdown); // kill command
+process.on("exit", shutdown);

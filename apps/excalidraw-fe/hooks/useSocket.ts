@@ -5,11 +5,15 @@ export const useSocket = (roomId: string) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8080`);
+    const ws = new WebSocket(`ws://localhost:8090`);
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: "join_room", room: roomId }));
       setLoading(false);
       setSocket(ws);
+    };
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setLoading(false);
     };
   }, []);
 

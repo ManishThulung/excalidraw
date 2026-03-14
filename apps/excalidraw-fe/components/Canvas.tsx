@@ -1,15 +1,15 @@
 "use client";
 
 import { getShapes } from "@/config/http-request";
+import { Tools } from "@/types/enums";
 import { useEffect, useRef, useState } from "react";
-
-export type Tools = "Rect" | "Circle" | "Arrow";
 
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawType, setDrawType] = useState<Tools | null>("Rect");
+  const [drawType, setDrawType] = useState<Tools | null>(Tools.Rectangle);
   const [existingShapes, setExistingShapes] = useState<any[]>([]);
   const existingShapesRef = useRef<any[]>([]);
+  const scaleRef = useRef(1);
 
   useEffect(() => {
     const fetchShapes = async () => {
@@ -19,28 +19,28 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
     fetchShapes();
   }, [roomId]);
-  console.log(existingShapes, "existingShapesexistingShapes");
+
   const handleClick = (type: Tools) => {
     setDrawType(type);
   };
 
   async function drawExistingShapes(
-    existingShapes: any,
-    context: CanvasRenderingContext2D
+    shapes: any,
+    context: CanvasRenderingContext2D,
   ) {
-    console.log(existingShapes, "existingShapes");
-    existingShapes &&
-      existingShapes?.map((shape: any) => {
-        if (shape.type == "Rect") {
+    // context.setTransform(1, 0, 0, 1, 0, 0); // Resets the zoom level to default before drawing existing shapes
+    shapes &&
+      shapes?.map((shape: any) => {
+        if (shape.type == Tools.Rectangle) {
           const parsedData = JSON.parse(shape.content);
           context.strokeRect(
             parsedData?.startX,
             parsedData?.startY,
             parsedData?.width,
-            parsedData?.height
+            parsedData?.height,
           );
         }
-        if (shape.type == "Circle") {
+        if (shape.type == Tools.Circle) {
           const parsedData = JSON.parse(shape.content);
           context.beginPath();
           context.arc(
@@ -48,7 +48,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             parsedData.centerY,
             Math.abs(parsedData.radius),
             0,
-            2 * Math.PI
+            2 * Math.PI,
           );
           context.stroke();
           context.closePath();
@@ -60,7 +60,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     socket: WebSocket,
     roomId: string,
     content: Record<string, string | number>,
-    type: string
+    type: string,
   ) {
     socket.send(
       JSON.stringify({
@@ -68,30 +68,44 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         room: roomId,
         content,
         toolType: type,
-      })
+      }),
     );
   }
-
-  useEffect(() => {
+  const redraw = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.scale(scaleRef.current, scaleRef.current);
+
+    drawExistingShapes(existingShapesRef.current, ctx);
+  };
+
+  useEffect(() => {
     existingShapesRef.current = existingShapes;
-    context.clearRect(0, 0, canvas.width, canvas.height); // Optional: clear before drawing
-    drawExistingShapes(existingShapes, context);
+    redraw();
   }, [existingShapes]);
 
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
-
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
       const context = canvas.getContext("2d");
       if (!context) return;
 
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      console.log(scaleRef, "initial scale ref");
+
+      redraw();
+
+      // listening to incoming events and drawing on canvas
       socket.onmessage = (event) => {
         const data = event && JSON?.parse(event.data || "");
 
@@ -112,21 +126,33 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       let startX = 0;
       let startY = 0;
 
+      const getMousePos = (e: MouseEvent) => {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+          x: (e.clientX - rect.left) / scaleRef.current,
+          y: (e.clientY - rect.top) / scaleRef.current,
+        };
+      };
+
       const mouseDownHandler = (e: MouseEvent) => {
         click = true;
-        startX = e.clientX;
-        startY = e.clientY;
+
+        const pos = getMousePos(e);
+        startX = pos.x;
+        startY = pos.y;
       };
 
       const mouseUpHandler = (e: MouseEvent) => {
         click = false;
-        const width = e.clientX - startX;
-        const height = e.clientY - startY;
+        const pos = getMousePos(e);
+        const width = pos.x - startX;
+        const height = pos.y - startY;
 
         let shape: any;
-        if (drawType === "Rect") {
+        if (drawType === Tools.Rectangle) {
           shape = { startX, startY, width, height };
-        } else if (drawType === "Circle") {
+        } else if (drawType === Tools.Circle) {
           const radius = Math.max(height, width) / 2;
           shape = {
             centerX: startX + radius,
@@ -136,27 +162,29 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         }
 
         if (shape) {
-          startDraw(socket, roomId, shape, "Rect");
+          startDraw(socket, roomId, shape, drawType as string);
         }
+        redraw(); // Redraw after drawing the new shape
       };
 
       const mouseMoveHandler = (e: MouseEvent) => {
         if (!click) return;
 
-        const width = e.clientX - startX;
-        const height = e.clientY - startY;
+        const pos = getMousePos(e);
+        const width = pos.x - startX;
+        const height = pos.y - startY;
 
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        // drawExistingShapes(existingShapes, context);
-        drawExistingShapes(existingShapesRef.current, context);
+        redraw();
 
-        context.strokeRect(startX, startY, width, height);
-
+        console.log(drawType, "choose type");
         switch (drawType) {
-          case "Rect":
-            context.strokeRect(startX, startY, width, height);
+          case Tools.Rectangle:
+            context.beginPath();
+            context.strokeRect(startX, startY, width, height); // draws a rectangle outline
+            context.closePath();
+
             break;
-          case "Circle":
+          case Tools.Circle:
             const radius = Math.max(height, width) / 2;
             context.beginPath();
             context.arc(
@@ -164,74 +192,88 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
               startY + radius,
               Math.abs(radius),
               0,
-              2 * Math.PI
+              2 * Math.PI,
             );
             context.stroke();
             context.closePath();
             break;
-          case "Arrow":
-            const startCoordinate = { x: startX, y: startY };
-            const endCoordinate = { x: e.clientX, y: e.clientY };
+          case Tools.Arrow:
             const headLength = 15;
-            const PI = Math.PI;
-            const degreesInRadians225 = (225 * PI) / 180;
-            const degreesInRadians135 = (135 * PI) / 180;
-            const dx = endCoordinate.x - startCoordinate.x;
-            const dy = endCoordinate.y - startCoordinate.y;
-            const angle = Math.atan2(dy, dx);
-            const x225 =
-              endCoordinate.x +
-              headLength * Math.cos(angle + degreesInRadians225);
-            const y225 =
-              endCoordinate.y +
-              headLength * Math.sin(angle + degreesInRadians225);
-            const x135 =
-              endCoordinate.x +
-              headLength * Math.cos(angle + degreesInRadians135);
-            const y135 =
-              endCoordinate.y +
-              headLength * Math.sin(angle + degreesInRadians135);
+            const angle = Math.atan2(pos.y - startY, pos.x - startX);
 
             context.beginPath();
-            context.moveTo(startCoordinate.x, startCoordinate.y);
-            context.lineTo(endCoordinate.x, endCoordinate.y);
-            context.moveTo(endCoordinate.x, endCoordinate.y);
-            context.lineTo(x225, y225);
-            context.moveTo(endCoordinate.x, endCoordinate.y);
-            context.lineTo(x135, y135);
+            context.moveTo(startX, startY);
+            context.lineTo(pos.x, pos.y);
+
+            context.lineTo(
+              pos.x - headLength * Math.cos(angle - Math.PI / 6),
+              pos.y - headLength * Math.sin(angle - Math.PI / 6),
+            );
+
+            context.moveTo(pos.x, pos.y);
+
+            context.lineTo(
+              pos.x - headLength * Math.cos(angle + Math.PI / 6),
+              pos.y - headLength * Math.sin(angle + Math.PI / 6),
+            );
+
             context.stroke();
             break;
         }
+      };
+
+      const wheelHandler = (e: WheelEvent) => {
+        e.preventDefault();
+
+        const zoomIntensity = 0.1;
+
+        const newScale =
+          e.deltaY < 0
+            ? Math.min(scaleRef.current + zoomIntensity, 5)
+            : Math.max(scaleRef.current - zoomIntensity, 0.2);
+
+        scaleRef.current = newScale;
+
+        console.log({ scaleRef, newScale }, "scaleRefscaleRef");
+
+        redraw();
       };
 
       // Add event listeners
       canvas.addEventListener("mousedown", mouseDownHandler);
       canvas.addEventListener("mouseup", mouseUpHandler);
       canvas.addEventListener("mousemove", mouseMoveHandler);
+      canvas.addEventListener("wheel", wheelHandler, { passive: false });
 
       // ✅ Cleanup
       return () => {
         canvas.removeEventListener("mousedown", mouseDownHandler);
         canvas.removeEventListener("mouseup", mouseUpHandler);
         canvas.removeEventListener("mousemove", mouseMoveHandler);
+        canvas.removeEventListener("wheel", wheelHandler);
       };
     }
-  }, [roomId, canvasRef]);
+  }, [roomId, drawType]);
 
   return (
     <>
       <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />
       <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-4 px-6 py-2 rounded-md">
-        <button className="text-black" onClick={() => handleClick("Rect")}>
+        <button
+          className="text-black"
+          onClick={() => handleClick(Tools.Rectangle)}
+        >
           rectangle
         </button>
-        <button className="text-black" onClick={() => handleClick("Circle")}>
+        <button
+          className="text-black"
+          onClick={() => handleClick(Tools.Circle)}
+        >
           circle
         </button>
-        <button className="text-black" onClick={() => handleClick("Arrow")}>
-          arraow
+        <button className="text-black" onClick={() => handleClick(Tools.Arrow)}>
+          arrow
         </button>
-        {/* <button>rectangle</button> */}
       </div>
     </>
   );

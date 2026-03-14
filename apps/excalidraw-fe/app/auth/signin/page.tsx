@@ -22,7 +22,7 @@ const Page = () => {
       const res = await api.post("/sign-in", { username, password });
 
       if (res.data.success) {
-        router.push("/draw");
+        router.push("/rooms");
       } else {
         setError("Signin failed. Please try again.");
       }
@@ -97,7 +97,7 @@ const Page = () => {
         <p className="mt-10 text-center text-sm text-gray-500">
           Dont have an account?{" "}
           <a
-            href="/auth/signin"
+            href="/auth/signup"
             className="font-semibold text-indigo-600 hover:text-indigo-500"
           >
             Sign up

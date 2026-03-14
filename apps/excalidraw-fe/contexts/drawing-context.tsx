@@ -66,6 +66,8 @@ interface DrawingState {
   isEditingText: boolean;
   editingTextId: string | null;
   textInputPosition: Point | null;
+  // my custom
+  createdShape: DrawingObject | null;
 }
 
 type DrawingAction =
@@ -128,6 +130,8 @@ const initialState: DrawingState = {
   isEditingText: false,
   editingTextId: null,
   textInputPosition: null,
+
+  createdShape: null,
 };
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -315,6 +319,7 @@ function drawingReducer(
       return {
         ...state,
         objects: shouldAdd ? [...state.objects, finalShape] : state.objects,
+        createdShape: finalShape,
         isCreatingShape: false,
         previewShape: null,
       };
