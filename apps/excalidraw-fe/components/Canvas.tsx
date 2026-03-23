@@ -1,7 +1,15 @@
 "use client";
 
 import { getShapes } from "@/config/http-request";
+import { cn } from "@/lib/utils";
 import { Tools } from "@/types/enums";
+import {
+  Circle,
+  MousePointer,
+  MoveDownRight,
+  Square,
+  Type,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type ShapeType = {
@@ -14,7 +22,7 @@ type ShapeType = {
 
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawType, setDrawType] = useState<Tools>(Tools.Rectangle);
+  const [drawType, setDrawType] = useState<Tools>(Tools.Select);
   const [existingShapes, setExistingShapes] = useState<ShapeType[]>([]);
   const existingShapesRef = useRef<ShapeType[]>([]);
   const scaleRef = useRef(1);
@@ -30,6 +38,16 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
   const selectedShapesRef = useRef<Set<number>>(new Set()); // Ref to track multiple selected shapes
   const resizeHandleRef = useRef<string | null>(null); // track which shape is being used for resizing
+
+  const [textEditor, setTextEditor] = useState<{
+    x: number;
+    y: number;
+    // width: number;
+    // height: number;
+    shapeIndex?: number;
+  } | null>(null);
+
+  const [textValue, setTextValue] = useState("");
 
   function getClickedShape(x: number, y: number) {
     const shapes = existingShapesRef.current;
@@ -59,11 +77,16 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         }
       }
       if (shape.type === Tools.Text) {
+        const lines = data.text.split("\n");
+        const lineHeight = 18;
+
+        const height = lines.length * lineHeight;
+
         if (
           x >= data.x &&
           x <= data.x + data.width &&
-          y >= data.y - data.height &&
-          y <= data.y
+          y >= data.y - lineHeight &&
+          y <= data.y + height - lineHeight
         ) {
           return i;
         }
@@ -204,6 +227,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           context.stroke();
 
           if (selectedShapesRef.current.has(i)) {
+            console.log("first dircleeeeeeeeeeeeeeeeeee");
             drawSelectionBox(
               context,
               data.centerX - data.radius,
@@ -219,14 +243,42 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           context.moveTo(data.startX, data.startY);
           context.lineTo(data.endX, data.endY);
           context.stroke();
+
+          context.beginPath();
+          context.moveTo(data.endX, data.endY);
+          context.lineTo(data.rightX, data.rightY);
+          context.moveTo(data.endX, data.endY);
+          context.lineTo(data.leftX, data.leftY);
+          context.stroke();
+
+          if (selectedShapesRef.current.has(i)) {
+            const box = getArrowBoundingBox(data);
+            drawSelectionBox(context, box.x, box.y, box.width, box.height);
+          }
         }
 
         if (shape.type === Tools.Text) {
+          // //  Don't draw text if it's being edited
+          // if (textEditor?.shapeIndex === i) return;
+
           context.font = "16px sans-serif";
-          context.fillText(data.text, data.x, data.y);
+          context.fillStyle = "black";
+
+          const lines = data.text.split("\n");
+          const lineHeight = 18;
+
+          lines.forEach((line: string, index: number) => {
+            context.fillText(line, data.x, data.y + index * lineHeight);
+          });
 
           if (selectedShapesRef.current.has(i)) {
-            drawSelectionBox(context, data.x, data.y - 20, data.width, 20);
+            drawSelectionBox(
+              context,
+              data.x,
+              data.y - 16,
+              data.width,
+              lines.length * lineHeight,
+            );
           }
         }
       });
@@ -238,6 +290,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     content: Record<string, string | number>,
     type: Tools,
   ) {
+    console.log(`socket ${type} type send.`);
     socket.send(
       JSON.stringify({
         type: "draw",
@@ -262,6 +315,46 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
     drawExistingShapes(existingShapesRef.current, ctx);
   };
+
+  function saveText() {
+    if (!textEditor) return;
+
+    if (!textValue.trim()) {
+      setTextEditor(null);
+      return;
+    }
+
+    // editing existing text
+    if (textEditor.shapeIndex !== undefined) {
+      const shapes = existingShapesRef.current;
+
+      const shape = shapes[textEditor.shapeIndex];
+      const data = JSON.parse(shape.content);
+
+      data.text = textValue;
+
+      shape.content = JSON.stringify(data);
+
+      redraw();
+    } else {
+      // creating new text
+      startDraw(
+        socket,
+        roomId,
+        {
+          x: textEditor.x,
+          y: textEditor.y,
+          text: textValue,
+          width: textValue.length * 10,
+          height: 20,
+        },
+        Tools.Text,
+      );
+    }
+
+    setTextEditor(null);
+    setTextValue("");
+  }
 
   useEffect(() => {
     existingShapesRef.current = existingShapes;
@@ -325,6 +418,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         // selecting the shape
         if (drawType === Tools.Select) {
           const shapeIndex = getClickedShape(pos.x, pos.y);
+          console.log(shapeIndex, "shapeIndexshapeIndexshapeIndex");
           if (shapeIndex !== null) {
             // if shift key is pressed, add the shape to the selection, otherwise select only the clicked shape
             if (e.shiftKey) {
@@ -346,6 +440,21 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         const handle = getResizeHandle(pos.x, pos.y);
         if (handle) {
           resizeHandleRef.current = handle;
+          return;
+        }
+
+        // text
+        if (drawType === Tools.Text) {
+          const pos = getMousePos(e);
+
+          setTextEditor({
+            x: pos.x,
+            y: pos.y,
+          });
+
+          setTextValue("");
+          e.stopPropagation();
+          e.preventDefault();
           return;
         }
       };
@@ -377,6 +486,24 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             centerX: startX + radius,
             centerY: startY + radius,
             radius,
+          };
+        } else if (drawType === Tools.Arrow) {
+          const headLength = 10;
+          const angle = Math.atan2(pos.y - startY, pos.x - startX);
+          const rightX = pos.x - headLength * Math.cos(angle - Math.PI / 5);
+          const rightY = pos.y - headLength * Math.sin(angle - Math.PI / 5);
+          const leftX = pos.x - headLength * Math.cos(angle + Math.PI / 5);
+          const leftY = pos.y - headLength * Math.sin(angle + Math.PI / 5);
+
+          shape = {
+            startX,
+            startY,
+            endX: pos.x,
+            endY: pos.y,
+            rightX,
+            rightY,
+            leftX,
+            leftY,
           };
         }
 
@@ -436,6 +563,20 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             if (shape.type === Tools.Circle) {
               data.centerX += dx;
               data.centerY += dy;
+            }
+            if (shape.type === Tools.Arrow) {
+              data.startX += dx;
+              data.startY += dy;
+              data.endX += dx;
+              data.endY += dy;
+              data.leftX += dx;
+              data.leftY += dy;
+              data.rightX += dx;
+              data.rightY += dy;
+            }
+            if (shape.type === Tools.Text) {
+              data.x += dx;
+              data.y += dy;
             }
             shape.content = JSON.stringify(data);
           });
@@ -504,25 +645,25 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             context.closePath();
             break;
           case Tools.Arrow:
-            const headLength = 15;
+            const headLength = 10;
             const angle = Math.atan2(pos.y - startY, pos.x - startX);
 
             context.beginPath();
             context.moveTo(startX, startY);
             context.lineTo(pos.x, pos.y);
+            context.stroke();
 
+            context.beginPath();
+            context.moveTo(pos.x, pos.y);
             context.lineTo(
               pos.x - headLength * Math.cos(angle - Math.PI / 6),
               pos.y - headLength * Math.sin(angle - Math.PI / 6),
             );
-
             context.moveTo(pos.x, pos.y);
-
             context.lineTo(
               pos.x - headLength * Math.cos(angle + Math.PI / 6),
               pos.y - headLength * Math.sin(angle + Math.PI / 6),
             );
-
             context.stroke();
             break;
         }
@@ -554,11 +695,37 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         redraw();
       };
 
+      const doubleClickHandler = (e: MouseEvent) => {
+        const pos = getMousePos(e);
+
+        const shapeIndex = getClickedShape(pos.x, pos.y);
+
+        if (shapeIndex === null) return;
+
+        const shape = existingShapesRef.current[shapeIndex];
+
+        if (shape.type !== Tools.Text) return;
+
+        const data = JSON.parse(shape.content);
+
+        setTextEditor({
+          x: data.x,
+          y: data.y,
+          // width: data.width,
+          // height: data.height,
+          shapeIndex,
+        });
+
+        setTextValue(data.text);
+        requestAnimationFrame(() => redraw());
+      };
+
       // Add event listeners
       canvas.addEventListener("mousedown", mouseDownHandler);
       canvas.addEventListener("mouseup", mouseUpHandler);
       canvas.addEventListener("mousemove", mouseMoveHandler);
       canvas.addEventListener("wheel", wheelHandler, { passive: false });
+      canvas.addEventListener("dblclick", doubleClickHandler);
 
       window.addEventListener("keydown", (e) => {
         if (e.code === "Space") spacePressed.current = true;
@@ -567,44 +734,124 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         if (e.code === "Space") spacePressed.current = false;
       });
 
-      // ✅ Cleanup
+      //  Cleanup
       return () => {
         canvas.removeEventListener("mousedown", mouseDownHandler);
         canvas.removeEventListener("mouseup", mouseUpHandler);
         canvas.removeEventListener("mousemove", mouseMoveHandler);
         canvas.removeEventListener("wheel", wheelHandler);
+        canvas.removeEventListener("dblclick", doubleClickHandler);
       };
     }
   }, [roomId, drawType]);
 
   return (
-    <>
-      <canvas ref={canvasRef} width={500} height={500} className="bg-red-400" />
-      <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-4 px-6 py-2 rounded-md">
+    <div className="relative w-full h-full">
+      <canvas
+        ref={canvasRef}
+        width={500}
+        height={500}
+        className="bg-gray-100"
+      />
+      <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-2 px-4 py-2 rounded-md">
         <button
-          className="text-black"
+          className={cn(
+            "text-black hover:bg-gray-300 p-2 rounded-sm",
+            drawType === Tools.Select && "bg-gray-300",
+          )}
           onClick={() => handleClick(Tools.Select)}
         >
-          select
+          <MousePointer className="h-5 w-5" />
         </button>
         <button
-          className="text-black"
+          className={cn(
+            "text-black hover:bg-gray-300 p-2 rounded-sm",
+            drawType === Tools.Rectangle && "bg-gray-300",
+          )}
           onClick={() => handleClick(Tools.Rectangle)}
         >
-          rectangle
+          <Square className="h-5 w-5" />
         </button>
         <button
-          className="text-black"
+          className={cn(
+            "text-black hover:bg-gray-300 p-2 rounded-sm",
+            drawType === Tools.Circle && "bg-gray-300",
+          )}
           onClick={() => handleClick(Tools.Circle)}
         >
-          circle
+          <Circle className="h-5 w-5" />
         </button>
-        <button className="text-black" onClick={() => handleClick(Tools.Arrow)}>
-          arrow
+        <button
+          className={cn(
+            "text-black hover:bg-gray-300 p-2 rounded-sm",
+            drawType === Tools.Arrow && "bg-gray-300",
+          )}
+          onClick={() => handleClick(Tools.Arrow)}
+        >
+          <MoveDownRight className="h-5 w-5" />
+        </button>
+
+        <button
+          className={cn(
+            "text-black hover:bg-gray-300 p-2 rounded-sm",
+            drawType === Tools.Text && "bg-gray-300",
+          )}
+          onClick={() => handleClick(Tools.Text)}
+        >
+          <Type className="h-5 w-5" />
         </button>
       </div>
-    </>
+
+      {textEditor && (
+        <textarea
+          autoFocus
+          value={textValue}
+          onChange={(e) => setTextValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              saveText();
+            }
+          }}
+          onBlur={saveText}
+          style={{
+            position: "absolute",
+            left: textEditor.x * scaleRef.current + offsetRef.current.x,
+            top: textEditor.y * scaleRef.current + offsetRef.current.y,
+
+            // width: textEditor.width * scaleRef.current,
+            // height: textEditor.height * scaleRef.current,
+
+            fontSize: 16 * scaleRef.current,
+            fontFamily: "sans-serif",
+            color: "black",
+            border: "1px solid #666",
+            background: "transparent",
+            padding: "4px",
+            outline: "none",
+            zIndex: 1000,
+            resize: "none",
+            minWidth: "100px",
+            minHeight: "20px",
+          }}
+        />
+      )}
+    </div>
   );
 };
 
 export default Canvas;
+
+function getArrowBoundingBox(data: any) {
+  const minX = Math.min(data.startX, data.endX);
+  const minY = Math.min(data.startY, data.endY);
+  const maxX = Math.max(data.startX, data.endX);
+  const maxY = Math.max(data.startY, data.endY);
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
