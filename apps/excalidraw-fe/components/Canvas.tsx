@@ -23,7 +23,7 @@ type ShapeType = {
   type: Tools;
   roomId: number;
   userId: number;
-  // id: number;
+  id: string;
 };
 
 function isOnEdge(x: number, y: number, data: any) {
@@ -203,19 +203,21 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       });
   }
 
-  function startDraw(
+  function drawEvent(
     socket: WebSocket,
     roomId: string,
     content: Record<string, string | number>,
-    type: Tools,
+    toolType: Tools,
+    id?: string,
   ) {
-    console.log(`socket ${type} type send.`);
+    console.log(`socket ${toolType} toolType send.`);
     socket.send(
       JSON.stringify({
-        type: "draw",
+        id: id ?? crypto.randomUUID(),
+        action: id ? "update" : "draw",
         room: roomId,
         content,
-        toolType: type,
+        type: toolType,
       }),
     );
   }
@@ -257,7 +259,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       redraw();
     } else {
       // creating new text
-      startDraw(
+      drawEvent(
         socket,
         roomId,
         {
@@ -290,6 +292,8 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     redraw();
   }, [existingShapes]);
 
+  console.log(existingShapes, "ddddddddddddd");
+
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -305,17 +309,24 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       // listening to incoming events and drawing on canvas
       socket.onmessage = (event) => {
         const data = event && JSON?.parse(event.data || "");
+        console.log(data, "data socket event");
 
-        if (data.isDraw) {
-          setExistingShapes((prev) => [
-            ...prev,
-            {
-              type: data.type,
-              userId: data.userId,
-              content: data.data,
-              roomId: data.roomId,
-            },
-          ]);
+        const newShape = {
+          id: data.id,
+          type: data.type,
+          userId: data.userId,
+          content: data.content,
+          roomId: data.roomId,
+        };
+
+        if (data.action === "draw") {
+          setExistingShapes((prev) => [...prev, newShape]);
+        }
+
+        if (data.action === "update") {
+          setExistingShapes((prev) =>
+            prev.map((shape) => (shape.id === data.id ? newShape : shape)),
+          );
         }
       };
 
@@ -379,12 +390,32 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       };
 
       const mouseUpHandler = (e: MouseEvent) => {
+        const pos = getMousePos(e);
+
         if (isPanningRef.current) {
           isPanningRef.current = false;
           return;
         }
         // release the selected shape
         if (drawType === Tools.Select && isDraggingShapeRef.current) {
+          if (selectedShapeRef.current !== null) {
+            const dx = pos.x - dragStartRef.current.x;
+            const dy = pos.y - dragStartRef.current.y;
+
+            // multiple shape movement
+            selectedShapesRef.current.forEach((index) => {
+              const shape = existingShapesRef.current[index];
+              const data = JSON.parse(shape.content);
+
+              const updatedShape = {
+                ...data,
+                x: (data.x += dx),
+                y: (data.y += dy),
+              };
+              drawEvent(socket, roomId, updatedShape, data.type, shape.id);
+            });
+            // dragStartRef.current = pos;
+          }
           isDraggingShapeRef.current = false;
           selectedShapeRef.current = null;
         }
@@ -392,7 +423,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         resizeHandleRef.current = null; // release the resize handle
 
         click = false;
-        const pos = getMousePos(e);
         const w = pos.x - startX;
         const h = pos.y - startY;
 
@@ -433,8 +463,8 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           };
         }
 
-        if (shape && drawType !== Tools.Select) {
-          startDraw(socket, roomId, shape, drawType);
+        if (shape && drawType !== Tools.Select && w > 0 && h > 0) {
+          drawEvent(socket, roomId, shape, drawType);
         }
         redraw(); // Redraw after drawing the new shape
       };
@@ -498,6 +528,15 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
             data.x += dx;
             data.y += dy;
+
+            // const updatedShape = {
+            //   ...data,
+            //   x: (data.x += dx),
+            //   y: (data.y += dy),
+            // };
+            // drawEvent(socket, roomId, updatedShape, data.type, shape.id);
+            // console.log(data, "datadatadata");
+
             shape.content = JSON.stringify(data);
           });
           dragStartRef.current = pos;

@@ -103,9 +103,9 @@ wss.on("connection", function connection(ws, req) {
       // user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
     }
 
-    if (parsedData.type == "draw") {
-      const { room, content, toolType } = parsedData;
-      console.log(`drawn ${toolType} by user: ${userId} in room: ${room}`);
+    if (parsedData.action == "draw" || parsedData.action == "update") {
+      const { room, content, type, id, action } = parsedData;
+      console.log(`drawn ${type} by user: ${userId} in room: ${room}`);
       if (!users[room]) {
         ws.close();
         return;
@@ -113,8 +113,10 @@ wss.on("connection", function connection(ws, req) {
 
       const contentData = JSON.stringify(content);
       const payload = {
-        data: contentData,
-        type: toolType,
+        action,
+        id,
+        content: contentData,
+        type: type,
         roomId: room,
         userId,
         isDraw: true,
@@ -125,14 +127,23 @@ wss.on("connection", function connection(ws, req) {
       });
 
       try {
-        await prisma.shape.create({
-          data: {
-            type: toolType,
-            content: contentData,
-            roomId: Number(room),
-            userId: Number(userId),
-          },
-        });
+        action === "draw" &&
+          (await prisma.shape.create({
+            data: {
+              id,
+              type,
+              content: contentData,
+              roomId: Number(room),
+              userId: Number(userId),
+            },
+          }));
+        action === "update" &&
+          (await prisma.shape.update({
+            where: { id },
+            data: {
+              content: contentData,
+            },
+          }));
       } catch (error) {
         console.error("Error saving shape to database:", error);
       }

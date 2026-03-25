@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "ShapeType" AS ENUM ('Rectangle', 'Circle', 'Arrow', 'Text', 'Pencil', 'Line');
+CREATE TYPE "ShapeType" AS ENUM ('Rectangle', 'Circle', 'Arrow', 'Text', 'Pencil', 'Line', 'Diamond');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -33,7 +33,7 @@ CREATE TABLE "Chat" (
 
 -- CreateTable
 CREATE TABLE "Shape" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "type" "ShapeType" NOT NULL,
     "content" JSONB NOT NULL,
     "roomId" INTEGER NOT NULL,
