@@ -1,6 +1,12 @@
 "use client";
 
 import { getShapes } from "@/config/http-request";
+import {
+  displayText,
+  drawArrow,
+  drawCircle,
+  drawRectangle,
+} from "@/lib/canvas-draw";
 import { cn } from "@/lib/utils";
 import { Tools } from "@/types/enums";
 import {
@@ -13,17 +19,37 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 type ShapeType = {
-  content: string;
+  content: any;
   type: Tools;
   roomId: number;
   userId: number;
   // id: number;
 };
 
+function isOnEdge(x: number, y: number, data: any) {
+  const threshold = 5;
+
+  const left = Math.abs(x - data.x) < threshold;
+  const right = Math.abs(x - (data.x + data.width)) < threshold;
+  const top = Math.abs(y - data.y) < threshold;
+  const bottom = Math.abs(y - (data.y + data.height)) < threshold;
+
+  const withinX = x >= data.x && x <= data.x + data.width;
+  const withinY = y >= data.y && y <= data.y + data.height;
+
+  return (
+    (left && withinY) ||
+    (right && withinY) ||
+    (top && withinX) ||
+    (bottom && withinX)
+  );
+}
+
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawType, setDrawType] = useState<Tools>(Tools.Select);
   const [existingShapes, setExistingShapes] = useState<ShapeType[]>([]);
+  const [cursor, setCursor] = useState("default");
   const existingShapesRef = useRef<ShapeType[]>([]);
   const scaleRef = useRef(1);
   const offsetRef = useRef({ x: 0, y: 0 });
@@ -42,69 +68,25 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const [textEditor, setTextEditor] = useState<{
     x: number;
     y: number;
-    // width: number;
-    // height: number;
     shapeIndex?: number;
   } | null>(null);
 
   const [textValue, setTextValue] = useState("");
 
+  const LINEHEIGHT = 18;
+
   function getClickedShape(x: number, y: number) {
-    const shapes = existingShapesRef.current;
+    for (let i = existingShapesRef.current.length - 1; i >= 0; i--) {
+      const s = existingShapesRef.current[i];
 
-    for (let i = shapes.length - 1; i >= 0; i--) {
-      const shape = shapes[i];
-      const data = JSON.parse(shape.content);
-
-      if (shape.type === Tools.Rectangle) {
-        if (
-          x >= data.startX &&
-          x <= data.startX + data.width &&
-          y >= data.startY &&
-          y <= data.startY + data.height
-        ) {
-          return i;
-        }
-      }
-
-      if (shape.type === Tools.Circle) {
-        const dx = x - data.centerX;
-        const dy = y - data.centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance <= data.radius) {
-          return i;
-        }
-      }
-      if (shape.type === Tools.Text) {
-        const lines = data.text.split("\n");
-        const lineHeight = 18;
-
-        const height = lines.length * lineHeight;
-
-        if (
-          x >= data.x &&
-          x <= data.x + data.width &&
-          y >= data.y - lineHeight &&
-          y <= data.y + height - lineHeight
-        ) {
-          return i;
-        }
-      }
-
-      if (shape.type === Tools.Arrow) {
-        const dist =
-          Math.abs(
-            (data.endY - data.startY) * x -
-              (data.endX - data.startX) * y +
-              data.endX * data.startY -
-              data.endY * data.startX,
-          ) /
-          Math.sqrt(
-            (data.endY - data.startY) ** 2 + (data.endX - data.startX) ** 2,
-          );
-
-        if (dist < 5) return i;
+      const data = JSON.parse(s.content);
+      if (
+        x >= data.x &&
+        x <= data.x + data.width &&
+        y >= data.y &&
+        y <= data.y + data.height
+      ) {
+        return i;
       }
     }
     return null;
@@ -117,15 +99,12 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     w: number,
     h: number,
   ) {
-    ctx.save();
-
     ctx.setLineDash([4, 4]);
     ctx.strokeStyle = "blue";
     ctx.strokeRect(x, y, w, h);
-
     ctx.setLineDash([]);
 
-    const size = 8;
+    const size = 10;
 
     const handles = [
       [x, y],
@@ -137,12 +116,9 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     handles.forEach(([hx, hy]) => {
       ctx.fillStyle = "white";
       ctx.strokeStyle = "blue";
-
       ctx.fillRect(hx - size / 2, hy - size / 2, size, size);
       ctx.strokeRect(hx - size / 2, hy - size / 2, size, size);
     });
-
-    ctx.restore();
   }
 
   function getResizeHandle(x: number, y: number) {
@@ -151,22 +127,18 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     const shape = existingShapesRef.current[selectedShapeRef.current];
     const data = JSON.parse(shape.content);
 
-    const size = 10;
+    const size = 12;
 
-    const corners = [
-      { name: "tl", x: data.startX, y: data.startY },
-      { name: "tr", x: data.startX + data.width, y: data.startY },
-      { name: "bl", x: data.startX, y: data.startY + data.height },
-      {
-        name: "br",
-        x: data.startX + data.width,
-        y: data.startY + data.height,
-      },
+    const handles = [
+      { name: "nw", x: data.x, y: data.y },
+      { name: "ne", x: data.x + data.width, y: data.y },
+      { name: "sw", x: data.x, y: data.y + data.height },
+      { name: "se", x: data.x + data.width, y: data.y + data.height },
     ];
 
-    for (const c of corners) {
-      if (Math.abs(x - c.x) < size && Math.abs(y - c.y) < size) {
-        return c.name;
+    for (const h of handles) {
+      if (Math.abs(x - h.x) < size && Math.abs(y - h.y) < size) {
+        return h.name;
       }
     }
 
@@ -188,97 +160,44 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
   async function drawExistingShapes(
     shapes: any,
-    context: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D,
   ) {
     shapes &&
       shapes?.map((shape: any, i: number) => {
         const data = JSON.parse(shape.content);
 
-        context.lineWidth = 2;
-        context.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
 
-        if (shape.type == Tools.Rectangle) {
-          context.strokeRect(
-            data?.startX,
-            data?.startY,
-            data?.width,
-            data?.height,
-          );
-
-          if (selectedShapesRef.current.has(i)) {
-            drawSelectionBox(
-              context,
-              data.startX,
-              data.startY,
-              data.width,
-              data.height,
-            );
-          }
-        }
-        if (shape.type == Tools.Circle) {
-          context.beginPath();
-          context.arc(
-            data.centerX,
-            data.centerY,
-            Math.abs(data.radius),
-            0,
-            2 * Math.PI,
-          );
-          context.stroke();
-
-          if (selectedShapesRef.current.has(i)) {
-            console.log("first dircleeeeeeeeeeeeeeeeeee");
-            drawSelectionBox(
-              context,
-              data.centerX - data.radius,
-              data.centerY - data.radius,
-              data.radius * 2,
-              data.radius * 2,
-            );
-          }
+        if (data.type === Tools.Rectangle) {
+          drawRectangle(ctx, data);
         }
 
-        if (shape.type === Tools.Arrow) {
-          context.beginPath();
-          context.moveTo(data.startX, data.startY);
-          context.lineTo(data.endX, data.endY);
-          context.stroke();
-
-          context.beginPath();
-          context.moveTo(data.endX, data.endY);
-          context.lineTo(data.rightX, data.rightY);
-          context.moveTo(data.endX, data.endY);
-          context.lineTo(data.leftX, data.leftY);
-          context.stroke();
-
-          if (selectedShapesRef.current.has(i)) {
-            const box = getArrowBoundingBox(data);
-            drawSelectionBox(context, box.x, box.y, box.width, box.height);
-          }
+        if (data.type === Tools.Circle) {
+          drawCircle(ctx, data);
         }
 
-        if (shape.type === Tools.Text) {
-          // //  Don't draw text if it's being edited
-          // if (textEditor?.shapeIndex === i) return;
+        if (data.type === Tools.Text) {
+          displayText(ctx, data, LINEHEIGHT);
+        }
 
-          context.font = "16px sans-serif";
-          context.fillStyle = "black";
+        if (data.type === Tools.Arrow && data.points) {
+          drawArrow(ctx, data);
+        }
 
-          const lines = data.text.split("\n");
-          const lineHeight = 18;
-
-          lines.forEach((line: string, index: number) => {
-            context.fillText(line, data.x, data.y + index * lineHeight);
-          });
-
-          if (selectedShapesRef.current.has(i)) {
+        // SELECTION
+        if (selectedShapesRef.current.has(i)) {
+          if (data.type === Tools.Text) {
+            const lines = data.text.split("\n");
             drawSelectionBox(
-              context,
+              ctx,
               data.x,
               data.y - 16,
               data.width,
-              lines.length * lineHeight,
+              lines.length * LINEHEIGHT,
             );
+          } else {
+            drawSelectionBox(ctx, data.x, data.y, data.width, data.height);
           }
         }
       });
@@ -342,6 +261,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         socket,
         roomId,
         {
+          type: Tools.Text,
           x: textEditor.x,
           y: textEditor.y,
           text: textValue,
@@ -354,6 +274,15 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
     setTextEditor(null);
     setTextValue("");
+  }
+
+  function getMousePos(e: MouseEvent) {
+    const rect = canvasRef.current!.getBoundingClientRect();
+
+    return {
+      x: (e.clientX - rect.left - offsetRef.current.x) / scaleRef.current,
+      y: (e.clientY - rect.top - offsetRef.current.y) / scaleRef.current,
+    };
   }
 
   useEffect(() => {
@@ -394,15 +323,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       let startX = 0;
       let startY = 0;
 
-      const getMousePos = (e: MouseEvent) => {
-        const rect = canvas.getBoundingClientRect();
-
-        return {
-          x: (e.clientX - rect.left - offsetRef.current.x) / scaleRef.current,
-          y: (e.clientY - rect.top - offsetRef.current.y) / scaleRef.current,
-        };
-      };
-
       const mouseDownHandler = (e: MouseEvent) => {
         if (spacePressed.current) {
           isPanningRef.current = true;
@@ -418,8 +338,18 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         // selecting the shape
         if (drawType === Tools.Select) {
           const shapeIndex = getClickedShape(pos.x, pos.y);
-          console.log(shapeIndex, "shapeIndexshapeIndexshapeIndex");
           if (shapeIndex !== null) {
+            selectedShapeRef.current = shapeIndex;
+
+            const handle = getResizeHandle(pos.x, pos.y);
+
+            // ✅ FIRST: check resize
+            if (handle) {
+              resizeHandleRef.current = handle;
+              isDraggingShapeRef.current = false; // ❗ important
+              return;
+            }
+
             // if shift key is pressed, add the shape to the selection, otherwise select only the clicked shape
             if (e.shiftKey) {
               selectedShapesRef.current.add(shapeIndex);
@@ -428,30 +358,19 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
               selectedShapesRef.current.add(shapeIndex);
             } //
 
-            selectedShapeRef.current = shapeIndex;
             isDraggingShapeRef.current = true;
-
             dragStartRef.current = pos;
+
             return;
           }
         }
 
-        // resize
-        const handle = getResizeHandle(pos.x, pos.y);
-        if (handle) {
-          resizeHandleRef.current = handle;
-          return;
-        }
-
         // text
         if (drawType === Tools.Text) {
-          const pos = getMousePos(e);
-
           setTextEditor({
             x: pos.x,
             y: pos.y,
           });
-
           setTextValue("");
           e.stopPropagation();
           e.preventDefault();
@@ -474,36 +393,43 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
         click = false;
         const pos = getMousePos(e);
-        const width = pos.x - startX;
-        const height = pos.y - startY;
+        const w = pos.x - startX;
+        const h = pos.y - startY;
 
         let shape: any;
         if (drawType === Tools.Rectangle) {
-          shape = { startX, startY, width, height };
-        } else if (drawType === Tools.Circle) {
-          const radius = Math.max(height, width) / 2;
           shape = {
-            centerX: startX + radius,
-            centerY: startY + radius,
-            radius,
+            type: Tools.Rectangle,
+            x: startX,
+            y: startY,
+            width: w,
+            height: h,
+          };
+        } else if (drawType === Tools.Circle) {
+          shape = {
+            type: Tools.Circle,
+            x: startX,
+            y: startY,
+            width: w,
+            height: h,
           };
         } else if (drawType === Tools.Arrow) {
-          const headLength = 10;
-          const angle = Math.atan2(pos.y - startY, pos.x - startX);
-          const rightX = pos.x - headLength * Math.cos(angle - Math.PI / 5);
-          const rightY = pos.y - headLength * Math.sin(angle - Math.PI / 5);
-          const leftX = pos.x - headLength * Math.cos(angle + Math.PI / 5);
-          const leftY = pos.y - headLength * Math.sin(angle + Math.PI / 5);
-
           shape = {
-            startX,
-            startY,
-            endX: pos.x,
-            endY: pos.y,
-            rightX,
-            rightY,
-            leftX,
-            leftY,
+            type: Tools.Arrow,
+            x: Math.min(startX, pos.x),
+            y: Math.min(startY, pos.y),
+            width: Math.abs(w),
+            height: Math.abs(h),
+            points: [
+              {
+                x: startX - Math.min(startX, pos.x),
+                y: startY - Math.min(startY, pos.y),
+              },
+              {
+                x: pos.x - Math.min(startX, pos.x),
+                y: pos.y - Math.min(startY, pos.y),
+              },
+            ],
           };
         }
 
@@ -514,6 +440,35 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       };
 
       const mouseMoveHandler = (e: MouseEvent) => {
+        const pos = getMousePos(e);
+
+        /////// mouse move handler
+        // 1. Resize cursor
+        const handle = getResizeHandle(pos.x, pos.y);
+        console.log(handle, "handlehandlehandle");
+        if (handle) {
+          // setCursor("nwse-resize");
+          if (handle === "nw" || handle === "se") setCursor("nwse-resize");
+          else setCursor("nesw-resize");
+        } else {
+          const shapeIndex = getClickedShape(pos.x, pos.y);
+          console.log(shapeIndex, "shapeIndexshapeIndex");
+
+          if (shapeIndex !== null) {
+            const shape = existingShapesRef.current[shapeIndex];
+            const data = JSON.parse(shape.content);
+
+            if (isOnEdge(pos.x, pos.y, data)) {
+              setCursor("move");
+            } else {
+              setCursor("default");
+            }
+          } else {
+            setCursor("default");
+          }
+        }
+
+        ////
         if (isPanningRef.current) {
           const dx = e.clientX - panStartRef.current.x;
           const dy = e.clientY - panStartRef.current.y;
@@ -533,138 +488,110 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           isDraggingShapeRef.current &&
           selectedShapeRef.current !== null
         ) {
-          const pos = getMousePos(e);
-
           const dx = pos.x - dragStartRef.current.x;
           const dy = pos.y - dragStartRef.current.y;
 
-          const shapes = existingShapesRef.current;
-          // single shape movement
-          // const shape = shapes[selectedShapeRef.current];
-          // const data = JSON.parse(shape.content);
-          // if (shape.type === Tools.Rectangle) {
-          //   data.startX += dx;
-          //   data.startY += dy;
-          // }
-          // if (shape.type === Tools.Circle) {
-          //   data.centerX += dx;
-          //   data.centerY += dy;
-          // }
-          // shape.content = JSON.stringify(data);
-
           // multiple shape movement
           selectedShapesRef.current.forEach((index) => {
-            const shape = shapes[index];
+            const shape = existingShapesRef.current[index];
             const data = JSON.parse(shape.content);
-            if (shape.type === Tools.Rectangle) {
-              data.startX += dx;
-              data.startY += dy;
-            }
-            if (shape.type === Tools.Circle) {
-              data.centerX += dx;
-              data.centerY += dy;
-            }
-            if (shape.type === Tools.Arrow) {
-              data.startX += dx;
-              data.startY += dy;
-              data.endX += dx;
-              data.endY += dy;
-              data.leftX += dx;
-              data.leftY += dy;
-              data.rightX += dx;
-              data.rightY += dy;
-            }
-            if (shape.type === Tools.Text) {
-              data.x += dx;
-              data.y += dy;
-            }
+
+            data.x += dx;
+            data.y += dy;
             shape.content = JSON.stringify(data);
           });
-
           dragStartRef.current = pos;
-
           redraw();
-
           return;
         }
 
         // resizing the selected shape
         if (resizeHandleRef.current && selectedShapeRef.current !== null) {
-          const pos = getMousePos(e);
           const shape = existingShapesRef.current[selectedShapeRef.current];
           const data = JSON.parse(shape.content);
 
-          if (resizeHandleRef.current === "br") {
-            data.width = pos.x - data.startX;
-            data.height = pos.y - data.startY;
+          const handle = resizeHandleRef.current;
+
+          const oldX = data.x;
+          const oldY = data.y;
+          const oldW = data.width;
+          const oldH = data.height;
+
+          if (handle === "se") {
+            data.width = pos.x - oldX;
+            data.height = pos.y - oldY;
           }
 
-          if (resizeHandleRef.current === "tr") {
-            data.width = pos.x - data.startX;
-            data.startY = pos.y;
+          if (handle === "nw") {
+            data.x = pos.x;
+            data.y = pos.y;
+            data.width = oldW + (oldX - pos.x);
+            data.height = oldH + (oldY - pos.y);
           }
 
-          if (resizeHandleRef.current === "bl") {
-            data.startX = pos.x;
-            data.height = pos.y - data.startY;
+          if (handle === "ne") {
+            data.y = pos.y;
+            data.width = pos.x - oldX;
+            data.height = oldH + (oldY - pos.y);
+          }
+
+          if (handle === "sw") {
+            data.x = pos.x;
+            data.width = oldW + (oldX - pos.x);
+            data.height = pos.y - oldY;
+          }
+
+          // 🔥 Arrow scaling
+          if (shape.type === Tools.Arrow && data.points) {
+            const scaleX = data.width / oldW || 1;
+            const scaleY = data.height / oldH || 1;
+
+            data.points = data.points.map((p: any) => ({
+              x: p.x * scaleX,
+              y: p.y * scaleY,
+            }));
           }
 
           shape.content = JSON.stringify(data);
-
           redraw();
           return;
         }
 
         if (!click) return;
 
-        const pos = getMousePos(e);
         const width = pos.x - startX;
         const height = pos.y - startY;
 
+        const toolData = {
+          x: Math.min(startX, pos.x),
+          y: Math.min(startY, pos.y),
+          width: Math.abs(width),
+          height: Math.abs(height),
+          points: [
+            {
+              x: startX - Math.min(startX, pos.x),
+              y: startY - Math.min(startY, pos.y),
+            },
+            {
+              x: pos.x - Math.min(startX, pos.x),
+              y: pos.y - Math.min(startY, pos.y),
+            },
+          ],
+        };
+
         redraw();
 
-        console.log(drawType, "choose type");
         switch (drawType) {
           case Tools.Rectangle:
-            context.beginPath();
-            context.strokeRect(startX, startY, width, height); // draws a rectangle outline
-            context.closePath();
+            drawRectangle(context, toolData);
 
             break;
           case Tools.Circle:
-            const radius = Math.max(height, width) / 2;
-            context.beginPath();
-            context.arc(
-              startX + radius,
-              startY + radius,
-              Math.abs(radius),
-              0,
-              2 * Math.PI,
-            );
-            context.stroke();
-            context.closePath();
+            drawCircle(context, toolData);
+
             break;
           case Tools.Arrow:
-            const headLength = 10;
-            const angle = Math.atan2(pos.y - startY, pos.x - startX);
-
-            context.beginPath();
-            context.moveTo(startX, startY);
-            context.lineTo(pos.x, pos.y);
-            context.stroke();
-
-            context.beginPath();
-            context.moveTo(pos.x, pos.y);
-            context.lineTo(
-              pos.x - headLength * Math.cos(angle - Math.PI / 6),
-              pos.y - headLength * Math.sin(angle - Math.PI / 6),
-            );
-            context.moveTo(pos.x, pos.y);
-            context.lineTo(
-              pos.x - headLength * Math.cos(angle + Math.PI / 6),
-              pos.y - headLength * Math.sin(angle + Math.PI / 6),
-            );
-            context.stroke();
+            drawArrow(context, toolData);
             break;
         }
       };
@@ -751,6 +678,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         ref={canvasRef}
         width={500}
         height={500}
+        style={{ cursor }}
         className="bg-gray-100"
       />
       <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-2 px-4 py-2 rounded-md">
@@ -841,17 +769,3 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 };
 
 export default Canvas;
-
-function getArrowBoundingBox(data: any) {
-  const minX = Math.min(data.startX, data.endX);
-  const minY = Math.min(data.startY, data.endY);
-  const maxX = Math.max(data.startX, data.endX);
-  const maxY = Math.max(data.startY, data.endY);
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
-}
