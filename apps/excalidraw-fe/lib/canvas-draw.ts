@@ -1,10 +1,15 @@
-export function drawRectangle(ctx: CanvasRenderingContext2D, data: any) {
+import { ContentType } from "@/types";
+import { Tools } from "@/types/enums";
+
+type DrawType = Omit<ContentType, "type">;
+
+export function drawRectangle(ctx: CanvasRenderingContext2D, data: DrawType) {
   ctx.beginPath();
   ctx.strokeRect(data.x, data.y, data.width, data.height);
   ctx.closePath();
 }
 
-export function drawCircle(ctx: CanvasRenderingContext2D, data: any) {
+export function drawCircle(ctx: CanvasRenderingContext2D, data: DrawType) {
   ctx.beginPath();
   ctx.ellipse(
     data.x + data.width / 2,
@@ -20,12 +25,13 @@ export function drawCircle(ctx: CanvasRenderingContext2D, data: any) {
 
 export function displayText(
   ctx: CanvasRenderingContext2D,
-  data: any,
+  data: DrawType,
   linehieght: number,
 ) {
   ctx.font = "16px sans-serif";
   ctx.fillStyle = "black";
 
+  if (!data.text) return;
   const lines = data.text.split("\n");
 
   lines.forEach((line: string, index: number) => {
@@ -33,8 +39,9 @@ export function displayText(
   });
 }
 
-export function drawArrow(ctx: CanvasRenderingContext2D, data: any) {
-  const [p1, p2] = data.points;
+export function drawArrow(ctx: CanvasRenderingContext2D, data: DrawType) {
+  if (!data.points) return;
+  const [p1, p2] = data?.points;
 
   const startX = data.x + p1.x;
   const startY = data.y + p1.y;
@@ -61,4 +68,72 @@ export function drawArrow(ctx: CanvasRenderingContext2D, data: any) {
     endY - head * Math.sin(angle + Math.PI / 6),
   );
   ctx.stroke();
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+export function isOnEdge(x: number, y: number, data: ContentType) {
+  const threshold = 5;
+
+  const left = Math.abs(x - data.x) < threshold;
+  const right = Math.abs(x - (data.x + data.width)) < threshold;
+  const top = Math.abs(y - data.y) < threshold;
+  const bottom = Math.abs(y - (data.y + data.height)) < threshold;
+
+  const withinX = x >= data.x && x <= data.x + data.width;
+  const withinY = y >= data.y && y <= data.y + data.height;
+
+  return (
+    (left && withinY) ||
+    (right && withinY) ||
+    (top && withinX) ||
+    (bottom && withinX)
+  );
+}
+
+export function handleResize(
+  data: ContentType,
+  handle: string,
+  pos: { x: number; y: number },
+) {
+  const oldX = data.x;
+  const oldY = data.y;
+  const oldW = data.width;
+  const oldH = data.height;
+
+  if (handle === "se") {
+    data.width = pos.x - oldX;
+    data.height = pos.y - oldY;
+  }
+
+  if (handle === "nw") {
+    data.x = pos.x;
+    data.y = pos.y;
+    data.width = oldW + (oldX - pos.x);
+    data.height = oldH + (oldY - pos.y);
+  }
+
+  if (handle === "ne") {
+    data.y = pos.y;
+    data.width = pos.x - oldX;
+    data.height = oldH + (oldY - pos.y);
+  }
+
+  if (handle === "sw") {
+    data.x = pos.x;
+    data.width = oldW + (oldX - pos.x);
+    data.height = pos.y - oldY;
+  }
+
+  //  Arrow scaling
+  if (data.type === Tools.Arrow && data.points) {
+    const scaleX = data.width / oldW || 1;
+    const scaleY = data.height / oldH || 1;
+
+    data.points = data.points.map((p: any) => ({
+      x: p.x * scaleX,
+      y: p.y * scaleY,
+    }));
+  }
+  return data;
 }

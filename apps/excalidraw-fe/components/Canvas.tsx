@@ -6,8 +6,11 @@ import {
   drawArrow,
   drawCircle,
   drawRectangle,
+  handleResize,
+  isOnEdge,
 } from "@/lib/canvas-draw";
 import { cn } from "@/lib/utils";
+import { ContentType } from "@/types";
 import { Tools } from "@/types/enums";
 import {
   Circle,
@@ -25,25 +28,6 @@ type ShapeType = {
   userId: number;
   id: string;
 };
-
-function isOnEdge(x: number, y: number, data: any) {
-  const threshold = 5;
-
-  const left = Math.abs(x - data.x) < threshold;
-  const right = Math.abs(x - (data.x + data.width)) < threshold;
-  const top = Math.abs(y - data.y) < threshold;
-  const bottom = Math.abs(y - (data.y + data.height)) < threshold;
-
-  const withinX = x >= data.x && x <= data.x + data.width;
-  const withinY = y >= data.y && y <= data.y + data.height;
-
-  return (
-    (left && withinY) ||
-    (right && withinY) ||
-    (top && withinX) ||
-    (bottom && withinX)
-  );
-}
 
 const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -206,7 +190,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
   function drawEvent(
     socket: WebSocket,
     roomId: string,
-    content: Record<string, string | number>,
+    content: ContentType,
     toolType: Tools,
     id?: string,
   ) {
@@ -292,8 +276,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     redraw();
   }, [existingShapes]);
 
-  console.log(existingShapes, "ddddddddddddd");
-
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -354,10 +336,10 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
             const handle = getResizeHandle(pos.x, pos.y);
 
-            // ✅ FIRST: check resize
+            //  FIRST: check resize
             if (handle) {
               resizeHandleRef.current = handle;
-              isDraggingShapeRef.current = false; // ❗ important
+              isDraggingShapeRef.current = false; // important
               return;
             }
 
@@ -414,53 +396,70 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
               };
               drawEvent(socket, roomId, updatedShape, data.type, shape.id);
             });
-            // dragStartRef.current = pos;
           }
           isDraggingShapeRef.current = false;
           selectedShapeRef.current = null;
+          return;
         }
 
-        resizeHandleRef.current = null; // release the resize handle
+        if (resizeHandleRef.current && selectedShapeRef.current !== null) {
+          const shape = existingShapesRef.current[selectedShapeRef.current];
+          const data = JSON.parse(shape.content);
+
+          const handle = resizeHandleRef.current;
+
+          const updatedData = handleResize(data, handle, pos);
+
+          drawEvent(socket, roomId, updatedData, data.type, shape.id);
+
+          resizeHandleRef.current = null; // release the resize handle
+          return;
+        }
 
         click = false;
         const w = pos.x - startX;
         const h = pos.y - startY;
 
-        let shape: any;
-        if (drawType === Tools.Rectangle) {
-          shape = {
-            type: Tools.Rectangle,
-            x: startX,
-            y: startY,
-            width: w,
-            height: h,
-          };
-        } else if (drawType === Tools.Circle) {
-          shape = {
-            type: Tools.Circle,
-            x: startX,
-            y: startY,
-            width: w,
-            height: h,
-          };
-        } else if (drawType === Tools.Arrow) {
-          shape = {
-            type: Tools.Arrow,
-            x: Math.min(startX, pos.x),
-            y: Math.min(startY, pos.y),
-            width: Math.abs(w),
-            height: Math.abs(h),
-            points: [
-              {
-                x: startX - Math.min(startX, pos.x),
-                y: startY - Math.min(startY, pos.y),
-              },
-              {
-                x: pos.x - Math.min(startX, pos.x),
-                y: pos.y - Math.min(startY, pos.y),
-              },
-            ],
-          };
+        let shape: ContentType = {
+          type: Tools.Select,
+          x: startX,
+          y: startY,
+          width: w,
+          height: h,
+        };
+
+        switch (drawType) {
+          case Tools.Rectangle:
+            shape = {
+              ...shape,
+              type: Tools.Rectangle,
+            };
+            break;
+          case Tools.Circle:
+            shape = {
+              ...shape,
+              type: Tools.Circle,
+            };
+            break;
+          case Tools.Arrow:
+            shape = {
+              type: Tools.Arrow,
+              x: Math.min(startX, pos.x),
+              y: Math.min(startY, pos.y),
+              width: Math.abs(w),
+              height: Math.abs(h),
+              points: [
+                {
+                  x: startX - Math.min(startX, pos.x),
+                  y: startY - Math.min(startY, pos.y),
+                },
+                {
+                  x: pos.x - Math.min(startX, pos.x),
+                  y: pos.y - Math.min(startY, pos.y),
+                },
+              ],
+            };
+            break;
         }
 
         if (shape && drawType !== Tools.Select && w > 0 && h > 0) {
@@ -497,7 +496,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             setCursor("default");
           }
         }
-
         ////
         if (isPanningRef.current) {
           const dx = e.clientX - panStartRef.current.x;
@@ -529,14 +527,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             data.x += dx;
             data.y += dy;
 
-            // const updatedShape = {
-            //   ...data,
-            //   x: (data.x += dx),
-            //   y: (data.y += dy),
-            // };
-            // drawEvent(socket, roomId, updatedShape, data.type, shape.id);
-            // console.log(data, "datadatadata");
-
             shape.content = JSON.stringify(data);
           });
           dragStartRef.current = pos;
@@ -551,47 +541,9 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
           const handle = resizeHandleRef.current;
 
-          const oldX = data.x;
-          const oldY = data.y;
-          const oldW = data.width;
-          const oldH = data.height;
+          const updatedData = handleResize(data, handle, pos);
 
-          if (handle === "se") {
-            data.width = pos.x - oldX;
-            data.height = pos.y - oldY;
-          }
-
-          if (handle === "nw") {
-            data.x = pos.x;
-            data.y = pos.y;
-            data.width = oldW + (oldX - pos.x);
-            data.height = oldH + (oldY - pos.y);
-          }
-
-          if (handle === "ne") {
-            data.y = pos.y;
-            data.width = pos.x - oldX;
-            data.height = oldH + (oldY - pos.y);
-          }
-
-          if (handle === "sw") {
-            data.x = pos.x;
-            data.width = oldW + (oldX - pos.x);
-            data.height = pos.y - oldY;
-          }
-
-          // 🔥 Arrow scaling
-          if (shape.type === Tools.Arrow && data.points) {
-            const scaleX = data.width / oldW || 1;
-            const scaleY = data.height / oldH || 1;
-
-            data.points = data.points.map((p: any) => ({
-              x: p.x * scaleX,
-              y: p.y * scaleY,
-            }));
-          }
-
-          shape.content = JSON.stringify(data);
+          shape.content = JSON.stringify(updatedData);
           redraw();
           return;
         }
@@ -677,8 +629,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         setTextEditor({
           x: data.x,
           y: data.y,
-          // width: data.width,
-          // height: data.height,
           shapeIndex,
         });
 
