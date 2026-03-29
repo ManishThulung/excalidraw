@@ -14,32 +14,75 @@ datasource db {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  username   String   @unique
-  password   String
-  photo      String?
-  rooms      Room[]
-  chats      Chat[]
-  shapes    Shape[]
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  username          String   @unique
+  password          String
+  photo             String?
+  rooms             Room[]
+  chats             Chat[]
+  shapes            Shape[]
+  memberships       RoomMember[]
+  readStatuses      MessageReadStatus[]
+
+  @@index([email])
+  @@index([username])
 }
 
 model Room {
+  id                Int       @id @default(autoincrement())
+  slug              String    @unique
+  createdAt         DateTime  @default(now())
+  adminId           Int    
+  admin             User      @relation(fields: [adminId], references: [id])
+  chats             Chat[]
+  shapes            Shape[]
+  members           RoomMember[]
+
+  @@index([slug])
+}
+
+model RoomMember {
   id        Int       @id @default(autoincrement())
-  slug      String    @unique
-  createdAt DateTime  @default(now())
-  adminId   Int    
-  admin     User      @relation(fields: [adminId], references: [id])
-  chats     Chat[]
-  shapes    Shape[]
+  userId    Int 
+  user      User      @relation(fields: [userId], references: [id])      
+  roomId    Int  
+  room      Room      @relation(fields: [roomId], references: [id])
+  role      RoomRole  @default(Member)
+  joinedAt  DateTime  @default(now())
+
+  @@unique([userId, roomId])
+  @@index([userId])
+  @@index([roomId])
 }
 
 model Chat {
-  id        Int       @id @default(autoincrement())
-  message   String
-  roomId    Int
-  room      Room      @relation(fields: [roomId], references: [id])
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id])
+  id                Int       @id @default(autoincrement())
+  message           String
+  roomId            Int
+  room              Room      @relation(fields: [roomId], references: [id])
+  userId            Int
+  user              User      @relation(fields: [userId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isEdited          Boolean   @default(false)
+  isDeleted         Boolean   @default(false)
+  readStatuses      MessageReadStatus[]
+
+  @@index([roomId, createdAt])
+  @@index([userId])
+}
+
+model MessageReadStatus {
+  id          Int         @id @default(autoincrement())
+  messsageId  Int
+  message     Chat        @relation(fields: [messsageId],references: [id])
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  readAt      DateTime    @default(now())
+
+  @@unique([messsageId, userId])
+  @@index([userId, messsageId])
 }
 
 model Shape {
@@ -50,6 +93,10 @@ model Shape {
   room      Room      @relation(fields: [roomId], references: [id])
   userId    Int
   user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([roomId])
 }
 
 enum ShapeType {
@@ -60,4 +107,9 @@ enum ShapeType {
   Pencil
   Line
   Diamond
+}
+
+enum RoomRole {
+  Admin
+  Member
 }
