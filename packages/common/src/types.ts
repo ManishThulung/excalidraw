@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-export const signInSchema = z.object({
+export const signUpSchema = z.object({
   username: z.string({
     message: "Username is required.",
+  }),
+  email: z.string({
+    message: "Email is required.",
   }),
   password: z
     .string()
@@ -11,10 +14,14 @@ export const signInSchema = z.object({
     })
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
     ),
 });
 
-export const CreateRoomSchema = z.object({
-  slug: z.string().min(3).max(20),
+export const signInSchema = signUpSchema.omit({ email: true });
+
+export const createRoomSchema = z.object({
+  name: z.string().min(3).max(20),
 });
+
+// export const CreateRoomInput = z.infer<typeof createRoomSchema>;

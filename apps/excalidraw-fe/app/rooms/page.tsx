@@ -1,60 +1,3 @@
-// import { HoverEffect } from "@/components/ui/card";
-// import CreateRoom from "./create-room";
-
-// const page = () => {
-//   return (
-//     <div className="max-w-5xl mx-auto px-8">
-//       <div className="flex flex-col items-center justify-center min-h-screen py-2">
-//         <h1 className="text-4xl font-bold mb-4">Welcome to the Room</h1>
-//         <p className="text-lg mb-8">Here are some projects you can explore:</p>
-//         <CreateRoom />
-//         <HoverEffect items={projects} />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default page;
-
-// export const projects = [
-//   {
-//     title: "Stripe",
-//     description:
-//       "A technology company that builds economic infrastructure for the internet.",
-//     link: "https://stripe.com",
-//   },
-//   {
-//     title: "Netflix",
-//     description:
-//       "A streaming service that offers a wide variety of award-winning TV shows, movies, anime, documentaries, and more on thousands of internet-connected devices.",
-//     link: "https://netflix.com",
-//   },
-//   {
-//     title: "Google",
-//     description:
-//       "A multinational technology company that specializes in Internet-related services and products.",
-//     link: "https://google.com",
-//   },
-//   {
-//     title: "Meta",
-//     description:
-//       "A technology company that focuses on building products that advance Facebook's mission of bringing the world closer together.",
-//     link: "https://meta.com",
-//   },
-//   {
-//     title: "Amazon",
-//     description:
-//       "A multinational technology company focusing on e-commerce, cloud computing, digital streaming, and artificial intelligence.",
-//     link: "https://amazon.com",
-//   },
-//   {
-//     title: "Microsoft",
-//     description:
-//       "A multinational technology company that develops, manufactures, licenses, supports, and sells computer software, consumer electronics, personal computers, and related services.",
-//     link: "https://microsoft.com",
-//   },
-// ];
-
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -75,12 +18,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { api } from "@/config/http-request";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createRoomSchema } from "@repo/common/schema";
 import { Calendar, Link as LinkIcon, Plus, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 interface Room {
@@ -103,18 +56,24 @@ const Dashboard = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newRoomName, setNewRoomName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleCreateRoom = async () => {
-    if (newRoomName.trim()) {
+  const form = useForm<any>({
+    resolver: zodResolver(createRoomSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  const onSubmit = async (values: any) => {
+    if (values.name.trim()) {
       try {
-        const res = await api.post("/room", { slug: newRoomName });
+        const res = await api.post("/room", { name: values.name });
 
         if (res.data.success) {
-          setRooms([res.data.room, ...rooms]);
-          setNewRoomName("");
+          setRooms((prev) => [res.data.room, ...prev]);
+          form.reset();
           setIsCreateDialogOpen(false);
           toast.success("Room created successfully!");
         }
@@ -125,11 +84,20 @@ const Dashboard = () => {
     }
   };
 
-  const handleJoinRoom = () => {
-    // if (joinCode.trim()) {
-    //   toast.message("Joining room...");
-    //   setJoinCode("");
-    // }
+  const handleJoinRoom = async () => {
+    try {
+      const res = await api.post("/room/join", { name: joinCode });
+
+      if (res.data.success) {
+        setRooms((prev) => [res.data.room, ...prev]);
+        form.reset();
+        setIsCreateDialogOpen(false);
+        toast.success("Room created successfully!");
+      }
+    } catch (err: any) {
+      // setError(err.response.data.message);
+      toast.error(err.response.data.message);
+    }
   };
 
   const handleDeleteRoom = (roomId: string) => {
@@ -137,18 +105,22 @@ const Dashboard = () => {
     // toast.success("The room has been permanently deleted.");
   };
 
-  const filteredRooms = rooms.filter((room) =>
-    room.slug.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
+  const filteredRooms =
+    rooms.length > 0
+      ? rooms?.filter((item) =>
+          item.room.slug.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
+      : [];
+  console.log(filteredRooms, "filteredRoomsfilteredRooms");
   useEffect(() => {
     const getData = async () => {
       setLoading(false);
 
       try {
-        const res = await api.get("/room");
+        const res = await api.get("/rooms");
 
-        if (res.data.success) {
+        if (res.data && res.data.success) {
+          console.log(res.data.rooms, "dddddddddddddddddd");
           setRooms(res.data.rooms);
         }
       } catch (err: any) {
@@ -164,6 +136,7 @@ const Dashboard = () => {
   if (loading) {
     return <div>loading....</div>;
   }
+  console.log(rooms, "sdfsfd");
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -209,34 +182,42 @@ const Dashboard = () => {
                       Create a new collaborative whiteboard room for your team.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="roomName" className="text-right">
-                        Name
-                      </Label>
-                      <Input
-                        id="roomName"
-                        value={newRoomName}
-                        onChange={(e) => setNewRoomName(e.target.value)}
-                        placeholder="Enter room name..."
-                        className="col-span-3"
+
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Room Name</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter room name..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreateDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleCreateRoom}
-                      disabled={!newRoomName.trim()}
-                    >
-                      Create Room
-                    </Button>
-                  </DialogFooter>
+
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsCreateDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+
+                        <Button type="submit">Create Room</Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
                 </DialogContent>
               </Dialog>
             </div>
@@ -259,7 +240,7 @@ const Dashboard = () => {
               <Input
                 placeholder="Enter room code (e.g., ABC123)"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onChange={(e) => setJoinCode(e.target.value)}
                 className="max-w-sm"
               />
               <Button onClick={handleJoinRoom} disabled={!joinCode.trim()}>
@@ -317,11 +298,11 @@ const Dashboard = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-foreground text-lg mb-1">
-                        {room.slug}
+                        {room.room.slug}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">
-                          {room.id}
+                          {room.room.id}
                         </Badge>
                         {room.id && (
                           <Badge
@@ -363,16 +344,18 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{room.createdAt.toString().split("T")[0]}</span>
+                        <span>
+                          {room.room.createdAt.toString().split("T")[0]}
+                        </span>
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Created by:{" "}
                       <span className="text-foreground">
-                        {room.admin.username}
+                        {room.room.admin.username}
                       </span>
                     </div>
-                    <Link href={`/rooms/${room.id}`}>
+                    <Link href={`/rooms/${room.room.id}`}>
                       <Button className="w-full" variant="default">
                         Enter Room
                       </Button>

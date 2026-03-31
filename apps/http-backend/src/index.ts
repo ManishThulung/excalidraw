@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { CreateRoomSchema } from "@repo/common/schema";
+import { Prisma, RoomRole } from "@prisma/client";
+import { createRoomSchema } from "@repo/common/schema";
 import { prisma } from "@repo/db/prisma";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -29,15 +29,24 @@ app.post(
   "/api/room",
   auth,
   async (req: any, res: Response, next: NextFunction) => {
-    const { data, success } = CreateRoomSchema.safeParse(req.body);
+    const { data, success } = createRoomSchema.safeParse(req.body);
     if (!success) {
       throw new ErrorHandler(400, "Bad Request");
     }
     try {
       const room = await prisma.room.create({
         data: {
-          slug: data.slug,
+          slug: data.name,
           adminId: Number(req.userId),
+          members: {
+            create: {
+              userId: req.userId,
+              role: RoomRole.Admin,
+            },
+          },
+        },
+        include: {
+          admin: true,
         },
       });
       if (!room) {
@@ -59,17 +68,62 @@ app.post(
   },
 );
 
+app.post(
+  "/api/room/join",
+  auth,
+  async (req: any, res: Response, next: NextFunction) => {
+    const { name } = req.body;
+    try {
+      const room = await prisma.room.findUniqueOrThrow({
+        where: {
+          slug: name,
+        },
+        include: {
+          admin: true,
+        },
+      });
+      await prisma.roomMember.create({
+        data: {
+          userId: req.userId,
+          roomId: room.id,
+          role: RoomRole.Member,
+        },
+      });
+      res.status(201).json({
+        success: true,
+        room,
+        message: "room joined successfull",
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2002") {
+          return next(new ErrorHandler(400, "Room already exists."));
+        }
+      }
+      next(err);
+    }
+  },
+);
+
 app.get(
-  "/api/room",
+  "/api/rooms",
   auth,
   async (req: any, res: Response, next: NextFunction) => {
     try {
-      const rooms = await prisma.room.findMany({
+      const rooms = await prisma.roomMember.findMany({
         where: {
-          adminId: Number(req.userId),
+          userId: Number(req.userId),
         },
         include: {
-          admin: { select: { id: true, username: true } },
+          user: { select: { id: true, username: true } },
+          room: {
+            select: {
+              slug: true,
+              id: true,
+              createdAt: true,
+              admin: { select: { username: true } },
+            },
+          },
         },
       });
       if (!rooms) {

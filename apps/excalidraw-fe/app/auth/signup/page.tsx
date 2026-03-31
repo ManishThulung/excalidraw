@@ -16,10 +16,11 @@ const Page = () => {
 
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
+    const email = formData.get("email");
     const password = formData.get("password");
 
     try {
-      const res = await api.post("/sign-up", { username, password });
+      const res = await api.post("/sign-up", { username, password, email });
 
       if (res.data.success) {
         router.push("/auth/signin");
@@ -56,6 +57,25 @@ const Page = () => {
                 name="username"
                 id="username"
                 autoComplete="username"
+                required
+                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-900"
+            >
+              Email
+            </label>
+            <div className="mt-2">
+              <input
+                type="text"
+                name="email"
+                id="email"
+                autoComplete="email"
                 required
                 className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
               />

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
-import { signInSchema } from "@repo/common/schema";
+import { signInSchema, signUpSchema } from "@repo/common/schema";
 import ErrorHandler, { asyncHandler } from "../errors/error-handler";
 import { prisma } from "@repo/db/prisma";
 import { Prisma } from "@prisma/client";
@@ -9,7 +9,7 @@ import bcrypt from "bcryptjs";
 
 export const signup = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { data, success, error } = signInSchema.safeParse(req.body);
+    const { data, success, error } = signUpSchema.safeParse(req.body);
     if (!success) {
       throw new ErrorHandler(400, "Bad Request", error);
     }
@@ -19,6 +19,7 @@ export const signup = asyncHandler(
       const user = await prisma.user.create({
         data: {
           username: data.username,
+          email: data.email,
           password: hashedPassword,
         },
       });
