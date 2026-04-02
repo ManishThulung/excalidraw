@@ -28,11 +28,14 @@ wss.on("connection", function connection(ws, req) {
     "";
   console.log(token, "tokentokentokentoken");
   let userId: string;
+  let username: string;
+  let photo: string | null;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // @ts-ignore
-    userId = decoded.payload.id;
+    userId = (decoded as any).payload.id;
+    username = (decoded as any).payload.username;
+    photo = (decoded as any).payload.photo;
 
     // @ts-ignore
     if (!decoded && !decoded.payload.id) {
@@ -85,16 +88,41 @@ wss.on("connection", function connection(ws, req) {
       users[room]?.splice(index, 1);
     }
 
-    if (parsedData.type == "chat") {
+    if (parsedData.action == "chat") {
       console.log(`chat sent by ${userId}`);
       const { room, message } = parsedData;
+
       if (!users[room]) {
         ws.close();
         return;
       }
+      const payload = {
+        action: parsedData.action,
+        message,
+        roomId: room,
+        createdAt: new Date(),
+        user: {
+          username,
+          id: userId,
+          photo,
+        },
+      };
+      // console.log(users[room], "roooooom users");
       users[room]?.forEach((user) => {
-        user && user.ws.send(message);
+        user && user.ws.send(JSON.stringify(payload));
       });
+
+      try {
+        await prisma.chat.create({
+          data: {
+            message,
+            roomId: Number(room),
+            userId: Number(userId),
+          },
+        });
+      } catch (error) {
+        console.error(error);
+      }
 
       // const user = users.filter((user) => user.ws === ws);
       // if (!user) {
@@ -105,7 +133,7 @@ wss.on("connection", function connection(ws, req) {
 
     if (parsedData.action == "draw" || parsedData.action == "update") {
       const { room, content, type, id, action } = parsedData;
-      console.log(`drawn ${type} by user: ${userId} in room: ${room}`);
+      console.log(`${action} ${type} by user: ${userId} in room: ${room}`);
       if (!users[room]) {
         ws.close();
         return;

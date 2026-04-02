@@ -20,6 +20,7 @@ import {
   Type,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ChatSheet } from "./chat/ChatSheet";
 
 type ShapeType = {
   content: any;
@@ -378,6 +379,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           isPanningRef.current = false;
           return;
         }
+
         // release the selected shape
         if (drawType === Tools.Select && isDraggingShapeRef.current) {
           if (selectedShapeRef.current !== null) {
@@ -462,7 +464,12 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             break;
         }
 
-        if (shape && drawType !== Tools.Select && w > 0 && h > 0) {
+        if (
+          shape &&
+          drawType !== Tools.Select &&
+          Math.abs(w) > 0 &&
+          Math.abs(h) > 0
+        ) {
           drawEvent(socket, roomId, shape, drawType);
         }
         redraw(); // Redraw after drawing the new shape
@@ -719,6 +726,10 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         </button>
       </div>
 
+      <div className="absolute right-6 top-4">
+        <ChatSheet roomId={Number(roomId)} />
+      </div>
+
       {textEditor && (
         <textarea
           autoFocus
@@ -735,10 +746,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             position: "absolute",
             left: textEditor.x * scaleRef.current + offsetRef.current.x,
             top: textEditor.y * scaleRef.current + offsetRef.current.y,
-
-            // width: textEditor.width * scaleRef.current,
-            // height: textEditor.height * scaleRef.current,
-
             fontSize: 16 * scaleRef.current,
             fontFamily: "sans-serif",
             color: "black",

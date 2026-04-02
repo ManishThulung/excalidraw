@@ -68,6 +68,7 @@ app.post(
   },
 );
 
+// join room
 app.post(
   "/api/room/join",
   auth,
@@ -105,6 +106,7 @@ app.post(
   },
 );
 
+// get rooms
 app.get(
   "/api/rooms",
   auth,
@@ -139,6 +141,7 @@ app.get(
   },
 );
 
+// get all chats
 app.get(
   "/api/chats/:roomId",
   auth,
@@ -147,17 +150,18 @@ app.get(
     try {
       const chats = await prisma.chat.findMany({
         where: {
-          id: roomId,
+          roomId,
         },
         orderBy: {
-          id: "desc",
+          id: "asc",
         },
+        include: { user: true },
         take: 50,
       });
       if (!chats) {
         throw new ErrorHandler(500, "Internal server error");
       }
-      res.status(201).json({
+      res.status(200).json({
         chats,
       });
     } catch (error) {

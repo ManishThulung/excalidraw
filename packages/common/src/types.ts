@@ -25,3 +25,7 @@ export const createRoomSchema = z.object({
 });
 
 // export const CreateRoomInput = z.infer<typeof createRoomSchema>;
+
+export const chatContentSchema = z.object({
+  content: z.string().max(5000, "Message cannot exceed 5000 characters"),
+});
