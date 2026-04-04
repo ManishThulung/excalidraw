@@ -747,7 +747,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             left: textEditor.x * scaleRef.current + offsetRef.current.x,
             top: textEditor.y * scaleRef.current + offsetRef.current.y,
             fontSize: 16 * scaleRef.current,
-            fontFamily: "sans-serif",
             color: "black",
             border: "1px solid #666",
             background: "transparent",

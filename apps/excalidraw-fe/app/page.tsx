@@ -184,10 +184,10 @@ const Home = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
+              <Link href="/rooms">
                 <Button variant="outline">Dashboard</Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/rooms">
                 <Button variant="hero">
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -216,7 +216,7 @@ const Home = () => {
               sharing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard">
+              <Link href="/rooms">
                 <Button size="lg" variant="hero" className="text-lg px-8 py-6">
                   Start Drawing Now
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -515,7 +515,7 @@ const Home = () => {
               their ideas to life.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard">
+              <Link href="/rooms">
                 <Button size="lg" variant="hero" className="text-lg px-8 py-6">
                   Create Your First Room
                   <ArrowRight className="ml-2 h-5 w-5" />

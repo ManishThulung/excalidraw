@@ -74,7 +74,7 @@ export function Canvas({
         y: (screenY - rect.top - state.panY) / state.scale,
       };
     },
-    [state.panX, state.panY, state.scale]
+    [state.panX, state.panY, state.scale],
   );
 
   // Transform canvas coordinates to screen coordinates
@@ -85,7 +85,7 @@ export function Canvas({
         y: canvasY * state.scale + state.panY,
       };
     },
-    [state.panX, state.panY, state.scale]
+    [state.panX, state.panY, state.scale],
   );
 
   // Check if point is inside object
@@ -102,7 +102,7 @@ export function Canvas({
         case "circle":
           const radius = (obj.width || 0) / 2;
           const distance = Math.sqrt(
-            Math.pow(point.x - obj.x, 2) + Math.pow(point.y - obj.y, 2)
+            Math.pow(point.x - obj.x, 2) + Math.pow(point.y - obj.y, 2),
           );
           return distance <= radius;
         case "line":
@@ -112,7 +112,7 @@ export function Canvas({
           const p1 = obj.points[0];
           const p2 = obj.points[1];
           const lineLength = Math.sqrt(
-            Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
+            Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2),
           );
           if (lineLength === 0) return false;
           const distanceToLine =
@@ -120,7 +120,7 @@ export function Canvas({
               (p2.y - p1.y) * point.x -
                 (p2.x - p1.x) * point.y +
                 p2.x * p1.y -
-                p2.y * p1.x
+                p2.y * p1.x,
             ) / lineLength;
           return distanceToLine < 5; // 5 pixel tolerance
         case "pencil":
@@ -130,7 +130,7 @@ export function Canvas({
             const p1 = obj.points[i];
             const p2 = obj.points[i + 1];
             const distance = Math.sqrt(
-              Math.pow(point.x - p1.x, 2) + Math.pow(point.y - p1.y, 2)
+              Math.pow(point.x - p1.x, 2) + Math.pow(point.y - p1.y, 2),
             );
             if (distance < 10) return true; // 10 pixel tolerance for pencil
           }
@@ -153,7 +153,7 @@ export function Canvas({
           return false;
       }
     },
-    []
+    [],
   );
 
   // Check if point is on resize handle
@@ -188,7 +188,7 @@ export function Canvas({
 
       return null;
     },
-    [state.scale]
+    [state.scale],
   );
 
   // Draw functions
@@ -248,12 +248,12 @@ export function Canvas({
             ctx.moveTo(end.x, end.y);
             ctx.lineTo(
               end.x - arrowLength * Math.cos(angle - Math.PI / 6),
-              end.y - arrowLength * Math.sin(angle - Math.PI / 6)
+              end.y - arrowLength * Math.sin(angle - Math.PI / 6),
             );
             ctx.moveTo(end.x, end.y);
             ctx.lineTo(
               end.x - arrowLength * Math.cos(angle + Math.PI / 6),
-              end.y - arrowLength * Math.sin(angle + Math.PI / 6)
+              end.y - arrowLength * Math.sin(angle + Math.PI / 6),
             );
             ctx.stroke();
           }
@@ -283,7 +283,7 @@ export function Canvas({
 
       ctx.restore();
     },
-    [state.isEditingText, state.editingTextId]
+    [state.isEditingText, state.editingTextId],
   );
 
   // Draw selection handles for text objects
@@ -325,7 +325,7 @@ export function Canvas({
 
       ctx.restore();
     },
-    [state.scale]
+    [state.scale],
   );
 
   // Draw selection handles
@@ -364,7 +364,7 @@ export function Canvas({
 
       ctx.restore();
     },
-    [state.scale, drawTextSelectionHandles]
+    [state.scale, drawTextSelectionHandles],
   );
 
   // Render canvas
@@ -400,7 +400,7 @@ export function Canvas({
               obj.x - 2,
               obj.y - 2,
               (obj.width || 0) + 4,
-              (obj.height || 0) + 4
+              (obj.height || 0) + 4,
             );
             break;
           case "circle":
@@ -416,7 +416,7 @@ export function Canvas({
               obj.x - 2,
               obj.y - textHeight - 2,
               textWidth + 4,
-              textHeight + 4
+              textHeight + 4,
             );
             break;
           case "line":
@@ -473,7 +473,7 @@ export function Canvas({
 
   // Handle text input events
   const handleTextInputKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
     // Prevent event from bubbling to document
     e.stopPropagation();
@@ -525,7 +525,7 @@ export function Canvas({
     if (state.tool === "select") {
       // Check for resize handles first
       const selectedObject = state.objects.find((obj) =>
-        state.selectedIds.includes(obj.id)
+        state.selectedIds.includes(obj.id),
       );
       if (selectedObject) {
         const handle = getResizeHandle(point, selectedObject);
@@ -652,7 +652,7 @@ export function Canvas({
     const canvas = canvasRef.current;
     if (canvas && state.tool === "select") {
       const selectedObject = state.objects.find((obj) =>
-        state.selectedIds.includes(obj.id)
+        state.selectedIds.includes(obj.id),
       );
       if (selectedObject && getResizeHandle(point, selectedObject)) {
         canvas.style.cursor = "nw-resize";
@@ -714,7 +714,7 @@ export function Canvas({
 
     const screenPos = canvasToScreen(
       state.textInputPosition.x,
-      state.textInputPosition.y
+      state.textInputPosition.y,
     );
     const fontSize = Math.max(14, state.fontSize * state.scale);
 
@@ -728,7 +728,7 @@ export function Canvas({
       background: "white",
       padding: "4px 8px",
       outline: "none",
-      fontFamily: "Arial, sans-serif",
+      // fontFamily: "Arial, sans-serif",
       minWidth: "100px",
       minHeight: `${fontSize + 8}px`,
       zIndex: 1000,

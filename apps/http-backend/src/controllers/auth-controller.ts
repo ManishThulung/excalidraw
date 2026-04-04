@@ -46,9 +46,9 @@ export const signin = asyncHandler(
     }
 
     try {
-      const existUser = await prisma.user.findFirst({
+      const existUser = await prisma.user.findUnique({
         where: {
-          username: data?.username,
+          email: data?.email,
         },
       });
 

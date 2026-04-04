@@ -18,7 +18,7 @@ export const signUpSchema = z.object({
     ),
 });
 
-export const signInSchema = signUpSchema.omit({ email: true });
+export const signInSchema = signUpSchema.omit({ username: true });
 
 export const createRoomSchema = z.object({
   name: z.string().min(3).max(20),

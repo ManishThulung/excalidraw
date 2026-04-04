@@ -13,15 +13,6 @@ interface Room {
 let users: Record<string, Room[]> = {};
 
 wss.on("connection", function connection(ws, req) {
-  // console.log(req.headers.cookie?.split(" token=")[1], "sfasfda");
-  // const url = req.url;
-  // if (!url) {
-  //   ws.close();
-  //   return;
-  // }
-
-  // const queryParams = new URLSearchParams(url.split("?")[1]);
-  // const token = queryParams.get("token") || "";
   const token =
     req.headers.cookie?.split(" token=")[1] ||
     req.headers.cookie?.split("token=")[1] ||
@@ -46,15 +37,6 @@ wss.on("connection", function connection(ws, req) {
     ws.close();
     return;
   }
-
-  // users.push({
-  //   ws,
-  //   rooms: [],
-  //   // @ts-ignore
-  //   userId: decoded.payload.id,
-  // });
-
-  // users.
 
   ws.on("error", console.error);
 
@@ -123,12 +105,6 @@ wss.on("connection", function connection(ws, req) {
       } catch (error) {
         console.error(error);
       }
-
-      // const user = users.filter((user) => user.ws === ws);
-      // if (!user) {
-      //   return;
-      // }
-      // user?.rooms = user?.rooms?.filter((user) => user.ws === ws);
     }
 
     if (parsedData.action == "draw" || parsedData.action == "update") {
