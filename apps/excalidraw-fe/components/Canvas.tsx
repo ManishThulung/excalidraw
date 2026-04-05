@@ -119,24 +119,22 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         ctx.lineWidth = 2;
         ctx.strokeStyle = "black";
 
-        if (data.type === Tools.Rectangle) {
-          drawRectangle(ctx, data);
-        }
-
-        if (data.type === Tools.Circle) {
-          drawCircle(ctx, data);
-        }
-
-        if (data.type === Tools.Text) {
-          displayText(ctx, data, LINEHEIGHT);
-        }
-
-        if (data.type === Tools.Arrow && data.points) {
-          drawArrow(ctx, data);
-        }
-
-        if (data.type === Tools.Diamond) {
-          drawDiamond(ctx, data);
+        switch (data.type) {
+          case Tools.Rectangle:
+            drawRectangle(ctx, data);
+            break;
+          case Tools.Circle:
+            drawCircle(ctx, data);
+            break;
+          case Tools.Text:
+            displayText(ctx, data, LINEHEIGHT);
+            break;
+          case Tools.Arrow:
+            drawArrow(ctx, data);
+            break;
+          case Tools.Diamond:
+            drawDiamond(ctx, data);
+            break;
         }
 
         // SELECTION
@@ -456,14 +454,12 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         /////// mouse move handler
         // 1. Resize cursor
         const handle = getResizeHandle(pos.x, pos.y);
-        console.log(handle, "handlehandlehandle");
         if (handle) {
           // setCursor("nwse-resize");
           if (handle === "nw" || handle === "se") setCursor("nwse-resize");
           else setCursor("nesw-resize");
         } else {
           const shapeIndex = getClickedShape(pos.x, pos.y);
-          console.log(shapeIndex, "shapeIndexshapeIndex");
 
           if (shapeIndex !== null) {
             const shape = existingShapesRef.current[shapeIndex];
@@ -557,11 +553,9 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         switch (drawType) {
           case Tools.Rectangle:
             drawRectangle(context, toolData);
-
             break;
           case Tools.Circle:
             drawCircle(context, toolData);
-
             break;
           case Tools.Arrow:
             drawArrow(context, toolData);
@@ -621,6 +615,19 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         requestAnimationFrame(() => redraw());
       };
 
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.code === "Space") {
+          spacePressed.current = true;
+          return;
+        }
+        // Ctrl + Z (Windows/Linux) OR Cmd + Z (Mac)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+          e.preventDefault(); // prevent browser undo (important)
+          // handleUndo();
+          console.log(" control + z");
+        }
+      };
+
       // Add event listeners
       canvas.addEventListener("mousedown", mouseDownHandler);
       canvas.addEventListener("mouseup", mouseUpHandler);
@@ -628,9 +635,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
       canvas.addEventListener("wheel", wheelHandler, { passive: false });
       canvas.addEventListener("dblclick", doubleClickHandler);
 
-      window.addEventListener("keydown", (e) => {
-        if (e.code === "Space") spacePressed.current = true;
-      });
+      window.addEventListener("keydown", handleKeyDown);
       window.addEventListener("keyup", (e) => {
         if (e.code === "Space") spacePressed.current = false;
       });
