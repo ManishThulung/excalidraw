@@ -11,6 +11,7 @@ interface Room {
 }
 
 let users: Record<string, Room[]> = {};
+const wsRoomMap = new Map<WebSocket, string>();
 
 wss.on("connection", function connection(ws, req) {
   const token =
@@ -43,16 +44,22 @@ wss.on("connection", function connection(ws, req) {
   ws.on("message", async function message(data) {
     const parsedData = JSON.parse(data as unknown as string);
 
-    if (parsedData.type == "join_room") {
+    if (parsedData.event == "join_room") {
       const { room } = parsedData;
       console.log(`user: ${userId} joined room ${room}`);
       if (!users[room]) {
         users[room] = [];
       }
-      users[room]?.push({ ws, userId });
+      // prevent duplicate ws
+      const exists = users[room].some((user) => user.ws === ws);
+
+      if (!exists) {
+        users[room].push({ ws, userId });
+        wsRoomMap.set(ws, room);
+      }
     }
 
-    if (parsedData.type == "leave_room") {
+    if (parsedData.event == "leave_room") {
       const { room } = parsedData;
       console.log(`user: ${userId} left room ${room}`);
 
@@ -70,7 +77,7 @@ wss.on("connection", function connection(ws, req) {
       users[room]?.splice(index, 1);
     }
 
-    if (parsedData.action == "chat") {
+    if (parsedData.event == "chat") {
       console.log(`chat sent by ${userId}`);
       const { room, message } = parsedData;
 
@@ -79,7 +86,7 @@ wss.on("connection", function connection(ws, req) {
         return;
       }
       const payload = {
-        action: parsedData.action,
+        event: parsedData.event,
         message,
         roomId: room,
         createdAt: new Date(),
@@ -107,9 +114,9 @@ wss.on("connection", function connection(ws, req) {
       }
     }
 
-    if (parsedData.action == "draw" || parsedData.action == "update") {
-      const { room, content, type, id, action } = parsedData;
-      console.log(`${action} ${type} by user: ${userId} in room: ${room}`);
+    if (parsedData.event == "draw" || parsedData.event == "update") {
+      const { room, content, type, id, event } = parsedData;
+      console.log(`${event} ${type} by user: ${userId} in room: ${room}`);
       if (!users[room]) {
         ws.close();
         return;
@@ -117,7 +124,7 @@ wss.on("connection", function connection(ws, req) {
 
       const contentData = JSON.stringify(content);
       const payload = {
-        action,
+        event,
         id,
         content: contentData,
         type: type,
@@ -131,7 +138,7 @@ wss.on("connection", function connection(ws, req) {
       });
 
       try {
-        action === "draw" &&
+        event === "draw" &&
           (await prisma.shape.create({
             data: {
               id,
@@ -141,7 +148,7 @@ wss.on("connection", function connection(ws, req) {
               userId: Number(userId),
             },
           }));
-        action === "update" &&
+        event === "update" &&
           (await prisma.shape.update({
             where: { id },
             data: {
@@ -152,6 +159,17 @@ wss.on("connection", function connection(ws, req) {
         console.error("Error saving shape to database:", error);
       }
     }
+  });
+
+  ws.on("close", () => {
+    const room = wsRoomMap.get(ws);
+    if (!room) return;
+
+    users[room] = (users[room] || []).filter((user) => user.ws !== ws);
+
+    wsRoomMap.delete(ws);
+
+    console.log(`user ${userId} disconnected from room ${room}`);
   });
 
   ws.send("socket connection successful");

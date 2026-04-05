@@ -6,6 +6,7 @@ import {
   drawArrow,
   drawCircle,
   drawRectangle,
+  drawSelectionBox,
   handleResize,
   isOnEdge,
 } from "@/lib/canvas-draw";
@@ -77,35 +78,6 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     return null;
   }
 
-  function drawSelectionBox(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-  ) {
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = "blue";
-    ctx.strokeRect(x, y, w, h);
-    ctx.setLineDash([]);
-
-    const size = 10;
-
-    const handles = [
-      [x, y],
-      [x + w, y],
-      [x, y + h],
-      [x + w, y + h],
-    ];
-
-    handles.forEach(([hx, hy]) => {
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "blue";
-      ctx.fillRect(hx - size / 2, hy - size / 2, size, size);
-      ctx.strokeRect(hx - size / 2, hy - size / 2, size, size);
-    });
-  }
-
   function getResizeHandle(x: number, y: number) {
     if (selectedShapeRef.current === null) return null;
 
@@ -143,10 +115,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     setDrawType(type);
   };
 
-  async function drawExistingShapes(
-    shapes: any,
-    ctx: CanvasRenderingContext2D,
-  ) {
+  function drawExistingShapes(shapes: any, ctx: CanvasRenderingContext2D) {
     shapes &&
       shapes?.map((shape: any, i: number) => {
         const data = JSON.parse(shape.content);
@@ -199,7 +168,7 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
     socket.send(
       JSON.stringify({
         id: id ?? crypto.randomUUID(),
-        action: id ? "update" : "draw",
+        event: id ? "update" : "draw",
         room: roomId,
         content,
         type: toolType,
@@ -302,11 +271,11 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           roomId: data.roomId,
         };
 
-        if (data.action === "draw") {
+        if (data.event === "draw") {
           setExistingShapes((prev) => [...prev, newShape]);
         }
 
-        if (data.action === "update") {
+        if (data.event === "update") {
           setExistingShapes((prev) =>
             prev.map((shape) => (shape.id === data.id ? newShape : shape)),
           );

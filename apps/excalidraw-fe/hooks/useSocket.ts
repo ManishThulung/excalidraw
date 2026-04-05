@@ -7,7 +7,7 @@ export const useSocket = (roomId: string) => {
   useEffect(() => {
     const ws = new WebSocket(`ws://localhost:8090`);
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "join_room", room: roomId }));
+      ws.send(JSON.stringify({ event: "join_room", room: roomId }));
       setLoading(false);
       setSocket(ws);
     };
@@ -15,7 +15,22 @@ export const useSocket = (roomId: string) => {
       console.error("WebSocket error:", error);
       setLoading(false);
     };
-  }, []);
+
+    return () => {
+      console.log("cleanup socket");
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            event: "leave_room",
+            room: roomId,
+          }),
+        );
+      }
+
+      ws.close(); // IMPORTANT
+    };
+  }, [roomId]);
 
   return { loading, socket };
 };

@@ -26,14 +26,13 @@ export function ChatSheet({ roomId }: { roomId: number }) {
   useEffect(() => {
     getChats();
   }, [roomId]);
-  console.log(chats, "dhssss");
 
   useEffect(() => {
     if (!socket) return;
     socket.onmessage = (event) => {
       const data = event && JSON?.parse(event.data || "");
       console.log(data, "dataaaaaaaaaaaaa");
-      if (data?.action !== "chat") return;
+      if (data?.event !== "chat") return;
       const transformedData = {
         id: Math.random(),
         message: data.message,
@@ -58,7 +57,7 @@ export function ChatSheet({ roomId }: { roomId: number }) {
             Make changes to your profile here. Click save when you&apos;re done.
           </SheetDescription> */}
           </SheetHeader>
-          <div className="grid flex-1 auto-rows-min gap-6 px-4">
+          <div className="grid flex-1 auto-rows-min gap-4 max-h-[80vh] overflow-y-auto no-scrollbar">
             {chats.length <= 0 ? (
               <>no chats</>
             ) : (

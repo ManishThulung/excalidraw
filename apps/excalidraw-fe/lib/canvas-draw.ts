@@ -137,3 +137,32 @@ export function handleResize(
   }
   return data;
 }
+
+export function drawSelectionBox(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = "blue";
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+
+  const size = 10;
+
+  const handles = [
+    [x, y],
+    [x + w, y],
+    [x, y + h],
+    [x + w, y + h],
+  ];
+
+  handles.forEach(([hx, hy]) => {
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "blue";
+    ctx.fillRect(hx - size / 2, hy - size / 2, size, size);
+    ctx.strokeRect(hx - size / 2, hy - size / 2, size, size);
+  });
+}

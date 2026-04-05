@@ -35,7 +35,7 @@ export const ChatInputForm: FC<IProps> = ({ roomId }) => {
       JSON.stringify({
         room: roomId,
         message: values.content.trim(),
-        action: "chat",
+        event: "chat",
       }),
     );
 
