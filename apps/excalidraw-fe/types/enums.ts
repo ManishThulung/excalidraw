@@ -6,4 +6,5 @@ export enum Tools {
   Pencil = "Pencil",
   Line = "Line",
   Select = "Select",
+  Diamond = "Diamond",
 }

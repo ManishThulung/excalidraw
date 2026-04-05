@@ -70,6 +70,30 @@ export function drawArrow(ctx: CanvasRenderingContext2D, data: DrawType) {
   ctx.stroke();
 }
 
+export function drawDiamond(ctx: CanvasRenderingContext2D, data: DrawType) {
+  const { x, y, width, height } = data;
+
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+
+  ctx.beginPath();
+
+  // top
+  ctx.moveTo(cx, y);
+
+  // right
+  ctx.lineTo(x + width, cy);
+
+  // bottom
+  ctx.lineTo(cx, y + height);
+
+  // left
+  ctx.lineTo(x, cy);
+
+  ctx.closePath();
+  ctx.stroke();
+}
+
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 export function isOnEdge(x: number, y: number, data: ContentType) {

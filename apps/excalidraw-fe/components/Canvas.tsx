@@ -5,6 +5,7 @@ import {
   displayText,
   drawArrow,
   drawCircle,
+  drawDiamond,
   drawRectangle,
   drawSelectionBox,
   handleResize,
@@ -13,15 +14,10 @@ import {
 import { cn } from "@/lib/utils";
 import { ContentType } from "@/types";
 import { Tools } from "@/types/enums";
-import {
-  Circle,
-  MousePointer,
-  MoveDownRight,
-  Square,
-  Type,
-} from "lucide-react";
+
 import { useEffect, useRef, useState } from "react";
 import { ChatSheet } from "./chat/ChatSheet";
+import { availableTools } from "@/lib/constants";
 
 type ShapeType = {
   content: any;
@@ -137,6 +133,10 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
 
         if (data.type === Tools.Arrow && data.points) {
           drawArrow(ctx, data);
+        }
+
+        if (data.type === Tools.Diamond) {
+          drawDiamond(ctx, data);
         }
 
         // SELECTION
@@ -431,6 +431,12 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
               ],
             };
             break;
+          case Tools.Diamond:
+            shape = {
+              ...shape,
+              type: Tools.Diamond,
+            };
+            break;
         }
 
         if (
@@ -560,6 +566,9 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
           case Tools.Arrow:
             drawArrow(context, toolData);
             break;
+          case Tools.Diamond:
+            drawDiamond(context, toolData);
+            break;
         }
       };
 
@@ -647,52 +656,18 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
         className="bg-gray-100"
       />
       <div className="fixed bg-white shadow-lg border top-5 left-[40%] flex gap-2 px-4 py-2 rounded-md">
-        <button
-          className={cn(
-            "text-black hover:bg-gray-300 p-2 rounded-sm",
-            drawType === Tools.Select && "bg-gray-300",
-          )}
-          onClick={() => handleClick(Tools.Select)}
-        >
-          <MousePointer className="h-5 w-5" />
-        </button>
-        <button
-          className={cn(
-            "text-black hover:bg-gray-300 p-2 rounded-sm",
-            drawType === Tools.Rectangle && "bg-gray-300",
-          )}
-          onClick={() => handleClick(Tools.Rectangle)}
-        >
-          <Square className="h-5 w-5" />
-        </button>
-        <button
-          className={cn(
-            "text-black hover:bg-gray-300 p-2 rounded-sm",
-            drawType === Tools.Circle && "bg-gray-300",
-          )}
-          onClick={() => handleClick(Tools.Circle)}
-        >
-          <Circle className="h-5 w-5" />
-        </button>
-        <button
-          className={cn(
-            "text-black hover:bg-gray-300 p-2 rounded-sm",
-            drawType === Tools.Arrow && "bg-gray-300",
-          )}
-          onClick={() => handleClick(Tools.Arrow)}
-        >
-          <MoveDownRight className="h-5 w-5" />
-        </button>
-
-        <button
-          className={cn(
-            "text-black hover:bg-gray-300 p-2 rounded-sm",
-            drawType === Tools.Text && "bg-gray-300",
-          )}
-          onClick={() => handleClick(Tools.Text)}
-        >
-          <Type className="h-5 w-5" />
-        </button>
+        {availableTools.map(({ type, icon: Icon }) => (
+          <button
+            key={type}
+            className={cn(
+              "text-black hover:bg-gray-300 p-2 rounded-sm",
+              drawType === type && "bg-gray-300",
+            )}
+            onClick={() => handleClick(type)}
+          >
+            <Icon className="h-5 w-5" />
+          </button>
+        ))}
       </div>
 
       <div className="absolute right-6 top-4">
