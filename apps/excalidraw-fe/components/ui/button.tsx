@@ -22,6 +22,10 @@ const buttonVariants = cva(
         hero: "bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300 border-0",
         glassmorphism:
           "bg-white/10 backdrop-blur-sm border border-white/20 text-foreground hover:bg-white/20 transition-all duration-300",
+        primary:
+          "bg-white/95 hover:bg-white/85 text-black shadow-lg shadow-purple-500/30",
+        // primary:
+        //   "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30",
       },
       size: {
         default: "h-9 px-4 py-2",

@@ -25,10 +25,14 @@ import {
   Coffee,
   Star,
   Quote,
+  MessageSquare,
+  Lock,
+  Pencil,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import FeatureCard from "@/components/FeatureCard";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 const Home = () => {
   const features = [
@@ -105,42 +109,42 @@ const Home = () => {
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah Chen",
-      role: "Product Designer at TechCorp",
-      content:
-        "DrawFlow Studio has transformed how our design team collaborates. The real-time features are incredible and the interface is so intuitive.",
-      rating: 5,
-    },
-    {
-      name: "Marcus Rodriguez",
-      role: "Engineering Manager",
-      content:
-        "We use this for our architecture reviews and sprint planning. The ability to quickly sketch ideas and share them instantly is game-changing.",
-      rating: 5,
-    },
-    {
-      name: "Dr. Emily Watson",
-      role: "University Professor",
-      content:
-        "My students love using this for group projects. It's made remote learning so much more interactive and engaging.",
-      rating: 5,
-    },
-  ];
+  // const testimonials = [
+  //   {
+  //     name: "Sarah Chen",
+  //     role: "Product Designer at TechCorp",
+  //     content:
+  //       "Drawly Studio has transformed how our design team collaborates. The real-time features are incredible and the interface is so intuitive.",
+  //     rating: 5,
+  //   },
+  //   {
+  //     name: "Marcus Rodriguez",
+  //     role: "Engineering Manager",
+  //     content:
+  //       "We use this for our architecture reviews and sprint planning. The ability to quickly sketch ideas and share them instantly is game-changing.",
+  //     rating: 5,
+  //   },
+  //   {
+  //     name: "Dr. Emily Watson",
+  //     role: "University Professor",
+  //     content:
+  //       "My students love using this for group projects. It's made remote learning so much more interactive and engaging.",
+  //     rating: 5,
+  //   },
+  // ];
 
-  const stats = [
-    { number: "10M+", label: "Drawings Created" },
-    { number: "500K+", label: "Active Users" },
-    { number: "99.9%", label: "Uptime" },
-    { number: "150+", label: "Countries" },
-  ];
+  // const stats = [
+  //   { number: "10M+", label: "Drawings Created" },
+  //   { number: "500K+", label: "Active Users" },
+  //   { number: "99.9%", label: "Uptime" },
+  //   { number: "150+", label: "Countries" },
+  // ];
 
   const faqs = [
     {
-      question: "Is DrawFlow Studio free to use?",
+      question: "Is Drawly Studio free to use?",
       answer:
-        "Yes! DrawFlow Studio offers a generous free plan that includes real-time collaboration, unlimited personal boards, and all core drawing tools. Premium plans are available for teams that need advanced features.",
+        "Yes! Drawly Studio offers a generous free plan that includes real-time collaboration, unlimited personal boards, and all core drawing tools. Premium plans are available for teams that need advanced features.",
     },
     {
       question: "How many people can collaborate on a board simultaneously?",
@@ -163,9 +167,9 @@ const Home = () => {
         "Yes! We integrate with popular tools like Slack, Microsoft Teams, Google Workspace, and more. Our API also allows for custom integrations.",
     },
     {
-      question: "Can I use DrawFlow Studio offline?",
+      question: "Can I use Drawly Studio offline?",
       answer:
-        "DrawFlow Studio requires an internet connection for real-time collaboration features. However, we're working on offline mode for individual work that syncs when you're back online.",
+        "Drawly Studio requires an internet connection for real-time collaboration features. However, we're working on offline mode for individual work that syncs when you're back online.",
     },
   ];
 
@@ -175,23 +179,25 @@ const Home = () => {
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Palette className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <Pencil className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-foreground">
-                DrawFlow Studio
-              </span>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                Drawly
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/rooms">
-                <Button variant="outline">Dashboard</Button>
+                <Button
+                  variant="outline"
+                  className="border-purple-500/30 hover:bg-purple-500/10"
+                >
+                  Dashboard
+                </Button>
               </Link>
               <Link href="/rooms">
-                <Button variant="hero">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <Button variant="primary">Get Started</Button>
               </Link>
             </div>
           </div>
@@ -199,7 +205,7 @@ const Home = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      {/* <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
         <div className="container mx-auto px-6 py-20 lg:py-32">
           <div className="text-center max-w-4xl mx-auto">
@@ -232,7 +238,64 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
+
+      <AnimatedBackground />
+
+      <div className="max-w-7xl mx-auto px-6 py-32 text-center space-y-8">
+        <div className="space-y-4">
+          <div className="inline-block px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full">
+            <p className="text-sm font-semibold text-purple-400">
+              Collaborate in Real-Time
+            </p>
+          </div>
+          <h2 className="text-6xl md:text-7xl font-bold text-balance leading-tight">
+            Draw, Chat &amp;{" "}
+            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+              Create Together
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            The ultimate collaborative drawing platform where teams come
+            together to visualize ideas in real-time. Draw shapes, chat, and
+            create magic with your team.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+          <Link href="/auth/signup">
+            <Button size="lg" variant={"primary"}>
+              Start Drawing Free
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </Link>
+          <Link href="/features">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-purple-500/40 hover:bg-purple-500/20"
+            >
+              Explore Features
+            </Button>
+          </Link>
+        </div>
+
+        {/* Trust Badges */}
+        {/* <div className="flex flex-wrap justify-center gap-8 pt-12 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+            50,000+ Users
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+            1M+ Drawings Created
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+            99.9% Uptime
+          </div>
+        </div> */}
+      </div>
 
       {/* Preview Section */}
       <section className="py-20 bg-muted/30">
@@ -251,7 +314,7 @@ const Home = () => {
               <CardContent className="p-0">
                 <Image
                   src={"/whiteboard-preview.jpg"}
-                  alt="DrawFlow Studio Whiteboard Interface"
+                  alt="Drawly Studio Whiteboard Interface"
                   height={100}
                   width={100}
                   className="w-full h-auto rounded-lg"
@@ -261,6 +324,54 @@ const Home = () => {
                 />
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* features */}
+      <section className="py-20">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              Everything You Need to Create
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Powerful features designed for modern teams. From simple sketches
+              to complex diagrams.
+            </p>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon={<Shapes className="w-6 h-6" />}
+              title="Rich Shapes"
+              description="Rectangles, circles, arrows, diamonds, and text. Everything you need to express your ideas."
+            />
+            <FeatureCard
+              icon={<Users className="w-6 h-6" />}
+              title="Real-Time Collaboration"
+              description="Invite teammates and see their changes instantly. Perfect for brainstorming sessions."
+            />
+            <FeatureCard
+              icon={<MessageSquare className="w-6 h-6" />}
+              title="Integrated Chat"
+              description="Discuss ideas while drawing. Real-time messaging built right into your workspace."
+            />
+            <FeatureCard
+              icon={<Share2 className="w-6 h-6" />}
+              title="Easy Sharing"
+              description="Share boards with a link or export as images. Collaborate with anyone, anywhere."
+            />
+            <FeatureCard
+              icon={<Lock className="w-6 h-6" />}
+              title="Secure & Private"
+              description="End-to-end encrypted. Your drawings stay private and secure at all times."
+            />
+            <FeatureCard
+              icon={<Zap className="w-6 h-6" />}
+              title="Lightning Fast"
+              description="Zero latency collaboration. Experience smooth, lag-free drawing and updates."
+            />
           </div>
         </div>
       </section>
@@ -325,7 +436,7 @@ const Home = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-muted/30">
+      {/* <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -348,7 +459,7 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Use Cases Section */}
       <section className="py-20">
@@ -359,7 +470,7 @@ const Home = () => {
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Whether you're designing, teaching, planning, or brainstorming,
-              DrawFlow Studio adapts to your needs.
+              Drawly Studio adapts to your needs.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
@@ -402,14 +513,14 @@ const Home = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-muted/30">
+      {/* <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
               What Our Users Say
             </h2>
             <p className="text-lg text-muted-foreground">
-              Real feedback from teams using DrawFlow Studio every day
+              Real feedback from teams using Drawly Studio every day
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -444,7 +555,7 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* FAQ Section */}
       <section className="py-20">
@@ -454,7 +565,7 @@ const Home = () => {
               Frequently Asked Questions
             </h2>
             <p className="text-lg text-muted-foreground">
-              Everything you need to know about DrawFlow Studio
+              Everything you need to know about Drawly Studio
             </p>
           </div>
           <div className="max-w-3xl mx-auto">
@@ -479,7 +590,7 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
+      {/* <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -501,7 +612,7 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="py-20 bg-muted/30">
@@ -511,14 +622,14 @@ const Home = () => {
               Ready to Start Creating?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Join thousands of teams already using DrawFlow Studio to bring
-              their ideas to life.
+              Join thousands of teams already using Drawly Studio to bring their
+              ideas to life.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/rooms">
-                <Button size="lg" variant="hero" className="text-lg px-8 py-6">
-                  Create Your First Room
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" variant={"primary"}>
+                  Create your first room
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
             </div>
@@ -531,15 +642,15 @@ const Home = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Palette className="h-5 w-5 text-primary-foreground" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <Pencil className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-foreground">
-                  DrawFlow Studio
-                </span>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                  Drawly Studio
+                </h1>
               </div>
-              <p className="text-muted-foreground mb-4 max-w-md">
+              <p className="text-muted-foreground my-4 max-w-md">
                 The collaborative whiteboard platform designed for modern teams.
                 Create, share, and collaborate visually.
               </p>
@@ -607,7 +718,7 @@ const Home = () => {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-border text-center text-muted-foreground">
-            <p>&copy; 2024 DrawFlow Studio. All rights reserved.</p>
+            <p>&copy; 2024 Drawly Studio. All rights reserved.</p>
           </div>
         </div>
       </footer>
