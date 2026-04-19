@@ -18,7 +18,6 @@ wss.on("connection", function connection(ws, req) {
     req.headers.cookie?.split(" token=")[1] ||
     req.headers.cookie?.split("token=")[1] ||
     "";
-  console.log(token, "tokentokentokentoken");
   let userId: string;
   let username: string;
   let photo: string | null;

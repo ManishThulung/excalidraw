@@ -1,78 +1,74 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
+import FeatureCard from "@/components/FeatureCard";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowRight,
-  Users,
-  Shapes,
-  Zap,
-  Shield,
-  Palette,
-  Share2,
-  Github,
-  Mail,
-  FileText,
-  CheckCircle,
-  Monitor,
-  GraduationCap,
   Briefcase,
+  CheckCircle,
   Coffee,
-  Star,
-  Quote,
-  MessageSquare,
+  FileText,
+  Github,
+  GraduationCap,
   Lock,
+  Mail,
+  MessageSquare,
+  Monitor,
   Pencil,
+  Shapes,
+  Share2,
+  Users,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import FeatureCard from "@/components/FeatureCard";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 const Home = () => {
-  const features = [
-    {
-      icon: <Users className="h-6 w-6" />,
-      title: "Real-time Collaboration",
-      description:
-        "Work together seamlessly with your team. See live cursors, instant updates, and collaborate in real-time.",
-    },
-    {
-      icon: <Shapes className="h-6 w-6" />,
-      title: "Rich Drawing Tools",
-      description:
-        "Create with rectangles, circles, lines, and text. Full suite of drawing tools for any creative project.",
-    },
-    {
-      icon: <Zap className="h-6 w-6" />,
-      title: "Lightning Fast",
-      description:
-        "Optimized for performance with smooth interactions, quick loading, and responsive design.",
-    },
-    {
-      icon: <Shield className="h-6 w-6" />,
-      title: "Secure & Private",
-      description:
-        "Your data is protected with enterprise-grade security. Private rooms with invite-only access.",
-    },
-    {
-      icon: <Palette className="h-6 w-6" />,
-      title: "Intuitive Interface",
-      description:
-        "Clean, modern design that gets out of your way. Focus on creating, not learning complex tools.",
-    },
-    {
-      icon: <Share2 className="h-6 w-6" />,
-      title: "Easy Sharing",
-      description:
-        "Share your boards instantly with room codes or direct links. Export and collaborate effortlessly.",
-    },
-  ];
+  // const features = [
+  //   {
+  //     icon: <Users className="h-6 w-6" />,
+  //     title: "Real-time Collaboration",
+  //     description:
+  //       "Work together seamlessly with your team. See live cursors, instant updates, and collaborate in real-time.",
+  //   },
+  //   {
+  //     icon: <Shapes className="h-6 w-6" />,
+  //     title: "Rich Drawing Tools",
+  //     description:
+  //       "Create with rectangles, circles, lines, and text. Full suite of drawing tools for any creative project.",
+  //   },
+  //   {
+  //     icon: <Zap className="h-6 w-6" />,
+  //     title: "Lightning Fast",
+  //     description:
+  //       "Optimized for performance with smooth interactions, quick loading, and responsive design.",
+  //   },
+  //   {
+  //     icon: <Shield className="h-6 w-6" />,
+  //     title: "Secure & Private",
+  //     description:
+  //       "Your data is protected with enterprise-grade security. Private rooms with invite-only access.",
+  //   },
+  //   {
+  //     icon: <Palette className="h-6 w-6" />,
+  //     title: "Intuitive Interface",
+  //     description:
+  //       "Clean, modern design that gets out of your way. Focus on creating, not learning complex tools.",
+  //   },
+  //   {
+  //     icon: <Share2 className="h-6 w-6" />,
+  //     title: "Easy Sharing",
+  //     description:
+  //       "Share your boards instantly with room codes or direct links. Export and collaborate effortlessly.",
+  //   },
+  // ];
 
   const useCases = [
     {
@@ -197,7 +193,7 @@ const Home = () => {
                 </Button>
               </Link>
               <Link href="/rooms">
-                <Button variant="primary">Get Started</Button>
+                <Button>Get Started</Button>
               </Link>
             </div>
           </div>
@@ -264,7 +260,7 @@ const Home = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
           <Link href="/auth/signup">
-            <Button size="lg" variant={"primary"}>
+            <Button size="lg">
               Start Drawing Free
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
@@ -364,8 +360,8 @@ const Home = () => {
             />
             <FeatureCard
               icon={<Lock className="w-6 h-6" />}
-              title="Secure & Private"
-              description="End-to-end encrypted. Your drawings stay private and secure at all times."
+              title="Export Drawings"
+              description="Export the whole canvas drawings as either JPG or PDF anytime."
             />
             <FeatureCard
               icon={<Zap className="w-6 h-6" />}
@@ -627,7 +623,7 @@ const Home = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/rooms">
-                <Button size="lg" variant={"primary"}>
+                <Button size="lg">
                   Create your first room
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -655,9 +651,14 @@ const Home = () => {
                 Create, share, and collaborate visually.
               </p>
               <div className="flex space-x-4">
-                <Button variant="ghost" size="icon">
-                  <Github className="h-5 w-5" />
-                </Button>
+                <Link
+                  href="https://github.com/ManishThulung/excalidraw"
+                  target="_blank"
+                >
+                  <Button variant="ghost" size="icon">
+                    <Github className="h-5 w-5" />
+                  </Button>
+                </Link>
                 <Button variant="ghost" size="icon">
                   <Mail className="h-5 w-5" />
                 </Button>

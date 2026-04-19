@@ -107,7 +107,7 @@ const Dashboard = () => {
 
   const filteredRooms =
     rooms.length > 0
-      ? rooms?.filter((item) =>
+      ? rooms?.filter((item: any) =>
           item.room.slug.toLowerCase().includes(searchQuery.toLowerCase()),
         )
       : [];

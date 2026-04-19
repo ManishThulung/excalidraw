@@ -18,6 +18,7 @@ import { Tools } from "@/types/enums";
 import { useEffect, useRef, useState } from "react";
 import { ChatSheet } from "./chat/ChatSheet";
 import { availableTools } from "@/lib/constants";
+import { exportAsImage, exportAsPDF } from "@/lib/export";
 
 type ShapeType = {
   content: any;
@@ -673,6 +674,21 @@ const Canvas = ({ roomId, socket }: { roomId: string; socket: WebSocket }) => {
             <Icon className="h-5 w-5" />
           </button>
         ))}
+        <div className=" top-5 right-5 flex gap-2">
+          <button
+            className="bg-white border px-3 py-1 rounded text-black"
+            onClick={() => exportAsImage(canvasRef)}
+          >
+            Export PNG
+          </button>
+
+          <button
+            className="bg-white border px-3 py-1 rounded text-black"
+            onClick={() => exportAsPDF(canvasRef)}
+          >
+            Export PDF
+          </button>
+        </div>
       </div>
 
       <div className="absolute right-6 top-4">
